@@ -10,7 +10,7 @@ public class NetworkView extends JFrame {
     private final String STEP_PREFIX = "Step: ";
     private final String POP_PREFIX = "Population: ";
 
-    public NetworkView(int height, int width) {
+    public NetworkView() {
         setTitle("MAS Disease Spread Network");
         setLocation(GUIData.SIM_X, GUIData.SIM_Y);
         getContentPane().add(new JLabel(STEP_PREFIX, JLabel.CENTER));

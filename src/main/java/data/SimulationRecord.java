@@ -3,6 +3,9 @@ package data;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Record for storing data from a simulation run.
+ */
 public class SimulationRecord {
 
     private List<String[]> headers;

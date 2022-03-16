@@ -270,12 +270,10 @@ public class Main {
             SimData.QUARANTINING = quarantine;
 
             try {
-
                 s = new Simulator();
             } catch (Exception e) {
-                System.out.println("couldn't set up sim ");
+                System.out.println("Simulator instantiation failed.");
                 e.printStackTrace();
-
             }
 
             setUpButton.setEnabled(false);

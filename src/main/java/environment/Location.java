@@ -19,8 +19,10 @@ public class Location {
     public Location(int row, int col) {
         this.row = row;
         this.col = col;
+        occupant = null;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Location) {
             Location other = (Location) obj;
@@ -29,8 +31,9 @@ public class Location {
         return false;
     }
 
+    @Override
     public String toString() {
-        return "[ " + row + ", " + col + "]";
+        return "[" + row + ", " + col + "]";
     }
 
     public int getRow() {
@@ -41,6 +44,7 @@ public class Location {
         return col;
     }
 
+    @Override
     public int hashCode() {
         return (row << 16) + col;
     }
@@ -52,6 +56,8 @@ public class Location {
     public Entity getOccupant() {
         return occupant;
     }
+
+    public void setOccupant(Entity e) { occupant = e; }
 
     public boolean occupied() {
         return occupant != null;

@@ -1,4 +1,4 @@
-package environment;
+package obsolete;
 
 import actors.Entity;
 import com.google.common.base.Function;

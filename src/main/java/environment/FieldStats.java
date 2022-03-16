@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import actors.Agent;
+import actors.Entity;
 import data.Counter;
 import models.Infected;
 
@@ -19,18 +20,14 @@ import models.Infected;
  * @version 01-02-2005
  */
 public class FieldStats {
-    // Counters for each type of entity (host, artist, etc.) in the simulation.
-    private HashMap<Class<?>, Counter> counters;
-    // Whether the counters are currently up to date.
-    private boolean valid;
+    
+    private HashMap<Class<?>, Counter> counters; // counter for each Class type
+    private boolean valid; // flag to signify if the stats are up-to-date
 
     /**
-     * Construct a field-statistics object.
+     * Construct and initialise field-statistics object.
      */
-    public FieldStats()
-    {
-        // Set up a collection for counters for each type of person that
-        // we might find
+    public FieldStats() {
         counters = new HashMap<Class<?>, Counter>();
         valid = true;
     }
@@ -38,28 +35,27 @@ public class FieldStats {
     /**
      * @return A string describing what persons are in the field.
      */
-    public String getPopulationDetails(Grid grid)
-    {
-        StringBuffer buffer = new StringBuffer();
-        if(!valid) {
-            generateCounts(grid);
-        }
-        Iterator<Class<?>> keys = counters.keySet().iterator();
-        while(keys.hasNext()) {
-            Counter info = counters.get(keys.next());
-            buffer.append("[");
-            buffer.append(info.getName());
-            buffer.append(" -> ");
-            buffer.append(info.getCount());
-            buffer.append("]");
-            buffer.append(' ');
-        }
-        return buffer.toString();
-    }
+//    public String getPopulationDetails(Grid grid) {
+//        StringBuffer buffer = new StringBuffer();
+//        if (!valid) {
+//            generateCounts(grid);
+//        }
+//        Iterator<Class<?>> keys = counters.keySet().iterator();
+//        while (keys.hasNext()) {
+//            Counter info = counters.get(keys.next());
+//            buffer.append("[");
+//            buffer.append(info.getName());
+//            buffer.append(" -> ");
+//            buffer.append(info.getCount());
+//            buffer.append("]");
+//            buffer.append(' ');
+//        }
+//        return buffer.toString();
+//    }
 
-    public String[] getClassCount(Grid grid, List<Class<?>> classes) {
+    public String[] getClassCount(Field field, List<Class<?>> classes) {
         String[] results = new String[classes.size()];
-        generateCounts(grid);
+        generateCounts2(field);
         for (int i = 0; i < classes.size(); i++) {
             if (counters.containsKey(classes.get(i))) {
                 results[i] = String.valueOf(counters.get(classes.get(i)).getCount());
@@ -75,34 +71,42 @@ public class FieldStats {
      * Invalidate the current set of statistics; reset all
      * counts to zero.
      */
-    public void reset()
-    {
+    public void reset() {
         valid = false;
         Iterator<Class<?>> keys = counters.keySet().iterator();
         while(keys.hasNext()) {
-            Counter cnt = counters.get(keys.next());
-            cnt.reset();
+            Counter count = counters.get(keys.next());
+            count.reset();
         }
     }
 
     /**
-     * Increment the count for one class of animal.
+     * Increment the count for the specified actor.
      */
-    public void incrementCount(Object actor)
-    {
+    public void incrementCount(Object actor) {
+        
+        /** if actor is an Agent, create counts for each of the
+         * SIR epidemiological compartments and increment each
+         * count accordingly. Count of each SIR model are needed
+         * for two purposes;
+         * 1) Recording the simulation requires counting the 
+         * populations of Agents by SIR status as each time step.
+         * 2) The simulation should only run until the number of
+         * Infected agents reaches 0.
+         */
         Class<?> actorClass = actor.getClass();
         if (actorClass == Agent.class) {
             Agent ag = (Agent) actor;
             actorClass = ag.getStatus().getClass();
-            Counter c = (Counter) counters.get(Agent.class);
+            Counter c = counters.get(Agent.class);
             if (c == null) {
                 c = new Counter(Agent.class.getSimpleName());
                 counters.put(Agent.class, c);
             }
             c.increment();
         }
-
-        Counter counter = (Counter) counters.get(actorClass);
+        
+        Counter counter = counters.get(actorClass);
         if (counter == null) {
             // we do not have a counter for this species yet - create one
             counter = new Counter(actorClass.getSimpleName());
@@ -112,7 +116,7 @@ public class FieldStats {
     }
 
     /**
-     * Indicate that an person count has been completed.
+     * Indicate that a person count has been completed.
      */
     public void countFinished() {
         valid = true;
@@ -120,11 +124,11 @@ public class FieldStats {
 
     /**
      * Determine whether the simulation is still viable.
-     * I.e., should it continue to run.
-     * @return true If there is more than one types of Actor present.
+     * i.e., should it continue to run.
+     * @return true if there are still Infected agents
      */
-    public boolean isViable(Grid grid) {
-        Counter c = (Counter) counters.get(Infected.class);
+    public boolean isViable() {
+        Counter c = counters.get(Infected.class);
         return c.getCount() > 0;
     }
 
@@ -134,16 +138,43 @@ public class FieldStats {
      * are placed in the field, but only when a request
      * is made for the information.
      */
-    private void generateCounts(Grid grid) {
+//    private void generateCounts(Grid grid) {
+//        reset();
+//        for(int row = 0; row < grid.getDepth(); row++) {
+//            for(int col = 0; col < grid.getWidth(); col++) {
+//                Object animal = grid.getObjectAt(row, col);
+//                if (animal != null) {
+//                    incrementCount(animal);
+//                }
+//            }
+//        }
+//        valid = true;
+//    }
+
+    private void generateCounts2(Field field) {
         reset();
-        for(int row = 0; row < grid.getDepth(); row++) {
-            for(int col = 0; col < grid.getWidth(); col++) {
-                Object animal = grid.getObjectAt(row, col);
-                if (animal != null) {
-                    incrementCount(animal);
-                }
-            }
+        List<Entity> entities = field.getAllEntities();
+        for (Entity e : entities) {
+            incrementCount(e);
         }
         valid = true;
+    }
+
+    public String getPopulationDetails2(Field field) {
+        StringBuffer buffer = new StringBuffer();
+        if (!valid) {
+            generateCounts2(field);
+        }
+        Iterator<Class<?>> keys = counters.keySet().iterator();
+        while (keys.hasNext()) {
+            Counter info = counters.get(keys.next());
+            buffer.append("[");
+            buffer.append(info.getName());
+            buffer.append(" -> ");
+            buffer.append(info.getCount());
+            buffer.append("]");
+            buffer.append(' ');
+        }
+        return buffer.toString();
     }
 }

@@ -7,13 +7,11 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import org.knowm.xchart.BitmapEncoder;
+import org.knowm.xchart.*;
 import org.knowm.xchart.BitmapEncoder.BitmapFormat;
-import org.knowm.xchart.XChartPanel;
-import org.knowm.xchart.XYChart;
-import org.knowm.xchart.XYChartBuilder;
 
 import data.GUIData;
+import org.knowm.xchart.style.markers.Circle;
 
 public class GraphView extends JFrame implements PropertyChangeListener {
 
@@ -32,9 +30,19 @@ public class GraphView extends JFrame implements PropertyChangeListener {
     public GraphView(Simulator sim) {
         sim.addPropertyChangeListener(this);
         initData = new int[][] { {0}, {0} };
-        graph.addSeries("Susceptible", initData[0], initData[1]);
-        graph.addSeries("Infected", initData[0], initData[1]);
-        graph.addSeries("Recovered", initData[0], initData[1]);
+
+        XYSeries sus = graph.addSeries("Susceptible", initData[0], initData[1]);
+        sus.setMarker(new Circle()).setMarkerColor(GUIData.SUS_COL);
+        sus.setLineColor(GUIData.SUS_COL);
+        sus.setSmooth(true);
+        XYSeries inf = graph.addSeries("Infected", initData[0], initData[1]);
+        inf.setMarker(new Circle()).setMarkerColor(GUIData.INF_COL);
+        inf.setLineColor(GUIData.INF_COL);
+        inf.setSmooth(true);
+        XYSeries rec = graph.addSeries("Recovered", initData[0], initData[1]);
+        rec.setMarker(new Circle()).setMarkerColor(GUIData.REC_COL);
+        rec.setLineColor(GUIData.REC_COL);
+        rec.setSmooth(true);
         setTitle("Simulation Graph");
         setLocation(GUIData.GRAPH_X, GUIData.GRAPH_Y);
         g = new XChartPanel<XYChart>(graph);

@@ -1,9 +1,10 @@
 package environment;
-import java.util.Iterator;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+
+import actors.Agent;
+import actors.AgentGenerator;
 import actors.Entity;
+import actors.EntityGenerator;
 
 /**
  * @author David J. Barnes and Michael Kolling
@@ -11,11 +12,11 @@ import actors.Entity;
  * @author James J Kerr
  * @version 07-12-2021
  */
-public class Grid {
+public class Grid implements Field<Entity, Location> {
 
     private int depth;
     private int width;
-    private Entity[][] field;
+    private Entity[][] matrix;
 
     /**
      * Create field grid where depth = number of rows,
@@ -26,27 +27,19 @@ public class Grid {
     public Grid(int depth, int width) {
         this.depth = depth;
         this.width = width;
-        field = new Entity[depth][width];
-    }
-
-    public void clear() {
-        for (int row = 0; row < depth; row++) {
-            for (int col = 0; col < width; col++) {
-                field[row][col] = null;
-            }
-        }
+        matrix = new Entity[depth][width];
     }
 
     /**
-     * Place a person at the given location.
+     * Place a person at the given index.
      * If there is already a person at the location it will
      * be lost.
      * @param entity: the person to be placed.
      * @param row: row coordinate of the location.
      * @param col: column coordinate of the location.
      */
-    public void place(Entity entity, int row, int col) {
-        place(entity, new Location(row, col));
+    private void placeByIndices(Entity entity, int row, int col) {
+        place(new Location(row, col), entity);
     }
 
     /**
@@ -56,8 +49,44 @@ public class Grid {
      * @param entity: the person to be placed.
      * @param location: where to place the person.
      */
-    public void place(Entity entity, Location location) {
-        field[location.getRow()][location.getCol()] = entity;
+    private void placeByLocation(Entity entity, Location location) {
+        matrix[location.getRow()][location.getCol()] = entity;
+    }
+
+    /**
+     * Initialise the field by populating it with the
+     * required entities at locations within the grid.
+     */
+    @Override
+    public void initialise() {
+        clearAll();
+        EntityGenerator<Entity> gen = new AgentGenerator();
+        for (int row = 0; row < getDimensions(); row++) {
+            for (int col = 0; col < getDimensions(); col++) {
+                if (matrix[row][col] == null) {
+                    Location l = new Location(row, col);
+                    Entity ag = gen.generate(l);
+                    if (ag instanceof Agent) {
+                        Agent a = (Agent) ag;
+                        place(l, ag);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void clearAll() {
+        for (int row = 0; row < depth; row++) {
+            for (int col = 0; col < width; col++) {
+                matrix[row][col] = null;
+            }
+        }
+    }
+
+    @Override
+    public void place(Location location, Entity entity) {
+        placeByLocation(entity, location);
     }
 
     /**
@@ -66,8 +95,9 @@ public class Grid {
      * be lost.
      * @param location The location to be cleared.
      */
+    @Override
     public void clearLocation(Location location) {
-        field[location.getRow()][location.getCol()] = null;
+        matrix[location.getRow()][location.getCol()] = null;
     }
 
     /**
@@ -75,6 +105,7 @@ public class Grid {
      * @param location Where in the field.
      * @return The person at the given location, or null if there is none.
      */
+    @Override
     public Entity getObjectAt(Location location) {
         return getObjectAt(location.getRow(), location.getCol());
     }
@@ -86,7 +117,7 @@ public class Grid {
      * @return The person at the given location, or null if there is none.
      */
     public Entity getObjectAt(int row, int col) {
-        return field[row][col];
+        return matrix[row][col];
     }
 
     /**
@@ -96,12 +127,13 @@ public class Grid {
      * @return A list of valid location within the grid area. This may be
      *         the empty list if all locations around are full.
      */
+    @Override
     public ArrayList<Location> getAllFreeAdjacentLocations(Location location) {
         Iterator<Location> adjacent = adjacentLocations(location);
         ArrayList<Location> freeLocations = new ArrayList<Location>();
         while(adjacent.hasNext()) {
-            Location next = (Location) adjacent.next();
-            if(field[next.getRow()][next.getCol()] == null) {
+            Location next = adjacent.next();
+            if(matrix[next.getRow()][next.getCol()] == null) {
                 freeLocations.add(next);
             }
         }
@@ -119,44 +151,26 @@ public class Grid {
      *         same object as the location parameter, or null if all
      *         locations around are full.
      */
+    @Override
     public Location freeAdjacentLocation(Location location) {
         Iterator<Location> adjacent = adjacentLocations(location);
+        List<Location> adjs = new ArrayList<>();
         while (adjacent.hasNext()) {
             Location next = adjacent.next();
-            if (field[next.getRow()][next.getCol()] == null) {
-                return next;
+            if (matrix[next.getRow()][next.getCol()] == null) {
+//                return next;
+                adjs.add(next);
             }
         }
-        if (field[location.getRow()][location.getCol()] == null) {
-            return location;
+        if (matrix[location.getRow()][location.getCol()] == null) {
+//            return location;
+            adjs.add(location);
+        }
+        if (!adjs.isEmpty()) {
+            Collections.shuffle(adjs);
+            return adjs.get(0);
         }
         return null;
-    }
-
-    public Grid cloneField() {
-        Grid clone = new Grid(getDepth(), getWidth());
-        for (int row = 0; row < getDepth(); row++) {
-            for (int col = 0; col < getWidth(); col++) {
-                clone.field[row][col] = field[row][col];
-            }
-        }
-        return clone;
-    }
-
-    /**
-     * Generate an iterator over a shuffled list of locations adjacent
-     * to the given one. The list will not include the location itself.
-     * All locations will lie within the grid.
-     * The topology of the grid is torus shaped.
-     * This means that it is like a chessboard but when a piece goes beyond the
-     * bottom row it reappears from the first row and vice versa.
-     * Similarly when it goes beyond the rightmost column it reappears from the
-     * leftmost column and vice versa.
-     * @param location The location from which to generate adjacencies.
-     * @return An iterator over locations adjacent to that given.
-     */
-    private Iterator<Location> adjacentLocations(Location location) {
-        return adjacentLocations(location, 1);
     }
 
     /**
@@ -164,7 +178,8 @@ public class Grid {
      * @param location: the location from which to generate adjacencies.
      * @return boolean.
      */
-    public <T> boolean isNeighbourTo(Location location, Class<T> c) {
+    @Override
+    public <T extends Entity> boolean isNeighbourTo(Location location, Class<T> c) {
         Iterator<Location> it = adjacentLocations(location, 1);
         while(it.hasNext()) {
             Entity e = getObjectAt(it.next());
@@ -174,17 +189,21 @@ public class Grid {
         return false;
     }
 
-    public <T> Location getNeighbour(Location loc, Class<T> c) {
-        Iterator<Location> it = adjacentLocations(loc, 1);
-        while(it.hasNext()) {
-            Location adjLoc = it.next();
-            Entity e = getObjectAt(adjLoc);
-            if(e != null && e.getClass() == c)
-                return adjLoc;
-        }
-        return null;
+    @Override
+    public int getDimensions() {
+        return getDepth();
     }
 
+    /**
+     * Return a list of all neighbours of type c from the given location, where
+     * a neighbour is an object occupying a location that is adjacent to the current
+     * location.
+     * @param location: the location from which to find adjacent neighbours
+     * @param c: the class of the neighbours to find
+     * @param <T> the sought-after subclass of the neighbour superclass
+     * @return a list of adjacent neighbours
+     */
+    @Override
     public <T extends Entity> List<Entity> getAllNeighbours(Location location, Class<T> c) {
         ArrayList<Entity> neighbours = new ArrayList<>();
         Iterator<Location> it = adjacentLocations(location, 1);
@@ -198,14 +217,55 @@ public class Grid {
         return neighbours;
     }
 
+    @Override
+    public boolean pathObstructed(Entity entity) {
+        if (entity instanceof Agent) {
+            Agent ag = (Agent) entity;
+            return pathObstructed(ag.getLocation(), ag.getDirection());
+        }
+        return false;
+    }
+
+    @Override
+    public List<Entity> getAllEntities() {
+        List<Entity> es = new ArrayList<>();
+        for (int row = 0; row < getDepth(); row++) {
+            for (int col = 0; col < getWidth(); col++) {
+                if (matrix[row][col] != null) {
+                    es.add(matrix[row][col]);
+                }
+            }
+        }
+        return es;
+    }
+
+    public int getDepth() {
+        return depth;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public Grid cloneField() {
+        Grid clone = new Grid(getDepth(), getWidth());
+        for (int row = 0; row < getDepth(); row++) {
+            for (int col = 0; col < getWidth(); col++) {
+                clone.matrix[row][col] = matrix[row][col];
+            }
+        }
+        return clone;
+    }
+
     /**
      * Generate an iterator over a shuffled list of locations within
-     * "manhattan distance" w to the given one. The list will not include the location itself.
+     * "manhattan distance" w to the given one. The list will not include
+     * the location itself.
      * All locations will lie within the grid.
      * The topology of the grid is torus shaped.
      * This means that it is like a chessboard but when a piece goes beyond the
      * bottom row it reappears from the first row and vice versa.
-     * Similarly when it goes beyond the rightmost column it reappears from the
+     * Similarly, when it goes beyond the rightmost column it reappears from the
      * leftmost column and vice versa.
      * @param location The location from which to generate adjacencies.
      * @param w The "manhattan" radius of the neighbourhood.
@@ -233,16 +293,24 @@ public class Grid {
         return locations.iterator();
     }
 
-    public boolean pathObstructed(Location l, Direction d) {
+    /**
+     * Generate an iterator over a shuffled list of locations adjacent
+     * to the given one. The list will not include the location itself.
+     * All locations will lie within the grid.
+     * The topology of the grid is torus shaped.
+     * This means that it is like a chessboard but when a piece goes beyond the
+     * bottom row it reappears from the first row and vice versa.
+     * Similarly when it goes beyond the rightmost column it reappears from the
+     * leftmost column and vice versa.
+     * @param location The location from which to generate adjacencies.
+     * @return An iterator over locations adjacent to that given.
+     */
+    private Iterator<Location> adjacentLocations(Location location) {
+        return adjacentLocations(location, 1);
+    }
+
+    private boolean pathObstructed(Location l, Direction d) {
         Location path = Location.getLocationInDirection(l, d);
         return getObjectAt(path) != null;
-    }
-
-    public int getDepth() {
-        return depth;
-    }
-
-    public int getWidth() {
-        return width;
     }
 }

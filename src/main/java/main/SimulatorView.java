@@ -6,8 +6,9 @@ import javax.swing.*;
 
 import actors.Agent;
 import data.GUIData;
-import environment.Grid;
-import environment.FieldStats;
+import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
+import edu.uci.ics.jung.visualization.VisualizationImageServer;
+import environment.*;
 
 import java.util.HashMap;
 
@@ -33,21 +34,17 @@ import java.util.HashMap;
  */
 public class SimulatorView extends JFrame {
 
-    private static final long serialVersionUID = 1L;
-    private static final Color EMPTY_COLOR = Color.white;
-    private static final Color UNKNOWN_COLOR = Color.gray;
-
     private final String STEP_PREFIX = "Step: ";
     private final String TOTAL_AG_PREFIX = "Population(s): ";
     private JLabel stepLabel, population;
-    private FieldView fieldView;
+    private AbstractView view;
 
     // A map for storing colors for participants in the simulation
     private HashMap<Class<?>, Color> colors;
     // A statistics object computing and storing simulation information
     private FieldStats stats;
 
-    public SimulatorView(int height, int width) {
+    public SimulatorView(int height, int width, Field f) {
         stats = new FieldStats();
         colors = new HashMap<Class<?>, Color>();
 
@@ -57,12 +54,17 @@ public class SimulatorView extends JFrame {
 
         setLocation(GUIData.SIM_X, GUIData.SIM_Y);
 
+        if (f instanceof Grid) {
+            view = new FieldView(height, width);
+        }
 
-        fieldView = new FieldView(height, width);
+        if (f instanceof Network) {
+            view = new NetworkView((Network) f, height, width);
+        }
 
         Container contents = getContentPane();
         contents.add(stepLabel, BorderLayout.NORTH);
-        contents.add(fieldView, BorderLayout.CENTER);
+        contents.add(view, BorderLayout.CENTER);
         contents.add(population, BorderLayout.SOUTH);
 
         // Make sure that closing the window ends the application
@@ -87,49 +89,80 @@ public class SimulatorView extends JFrame {
         colors.put(actorClass, color);
     }
 
-    @SuppressWarnings("unused")
-    private Color getColor(Class<?> actorClass) {
-        Color col = colors.get(actorClass);
-        if (col != null) {
-            return col;
-        }
-        return UNKNOWN_COLOR;
-    }
-
     /**
      * Show the current status of the field.
      * @param step Which iteration step it is.
-     * @param stats Status of the field to be represented.
      */
-    public void showStatus(int step, Grid grid) {
+     public void showStatus(int step, Field grid) {
         if (!isVisible())
             setVisible(true);
 
         stepLabel.setText(STEP_PREFIX + step);
         stats.reset();
-        fieldView.preparePaint();
-
-        for (int row = 0; row < grid.getDepth(); row++) {
-            for (int col = 0; col < grid.getWidth(); col++) {
-                Object actor = grid.getObjectAt(row, col);
-                if (actor != null) {
-                    stats.incrementCount(actor);
-                    if (actor instanceof Agent) {
-                        Agent ag = (Agent) actor;
-                        fieldView.drawMark(col, row, colors.get(ag.getStatus().getClass()));
-                    }
-                }
-                else
-                    fieldView.drawMark(col, row, EMPTY_COLOR);
-            }
-        }
+        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails2(grid));
         stats.countFinished();
-        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails(grid));
-        fieldView.repaint();
+        view.prepare();
+        view.update(grid);
+
     }
 
-    public boolean isViable(Grid grid) {
-        return stats.isViable(grid);
+    public boolean isViable() {
+        return stats.isViable();
+    }
+
+    private abstract class AbstractView extends JPanel {
+
+        protected int height;
+        protected int width;
+        protected Dimension size;
+        protected final int SCALING_FACTOR = 6;
+
+        public AbstractView(int width, int height) {
+            this.height = height;
+            this.width = width;
+            size = new Dimension(0, 0);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(
+                    width * SCALING_FACTOR,
+                    height * SCALING_FACTOR
+            );
+        }
+
+        public abstract void prepare();
+        public abstract void update(Field f);
+    }
+
+    private class NetworkView extends AbstractView {
+
+        private VisualizationImageServer vs;
+        private Network f;
+
+        public NetworkView(Network f, int height, int width) {
+            super(height, width);
+            this.f = f;
+        }
+
+        @Override
+        public void prepare() {
+            vs = new VisualizationImageServer<>(
+                new ISOMLayout<>(f.getGraph()),
+                getPreferredSize());
+            vs.getRenderContext().setVertexFillPaintTransformer(f.getPainter());
+            this.add(vs);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(1000, 600);
+        }
+
+        @Override
+        public void update(Field f) {
+            vs.updateUI();
+        }
     }
 
     /**
@@ -140,59 +173,66 @@ public class SimulatorView extends JFrame {
      * This is rather advanced GUI stuff - you can ignore this
      * for your project if you like.
      */
-    private class FieldView extends JPanel {
-        static final long serialVersionUID = -3018063635072997091L;
-        private final int GRID_VIEW_SCALING_FACTOR = 6;
+    private class FieldView extends AbstractView {
 
         private int gridWidth, gridHeight;
         private int xScale, yScale;
-        Dimension size;
         private Graphics g;
         private Image fieldImage;
 
-        /**
-         * Create a new FieldView component.
-         */
         public FieldView(int height, int width) {
+            super(height, width);
             gridHeight = height;
             gridWidth = width;
-            size = new Dimension(0, 0);
         }
 
-        /**
-         * Tell the GUI manager how big we would like to be.
-         */
-        public Dimension getPreferredSize() {
-            return new Dimension(gridWidth * GRID_VIEW_SCALING_FACTOR,
-                    gridHeight * GRID_VIEW_SCALING_FACTOR);
+        @Override
+        public void prepare() {
+            preparePaint();
+        }
+
+        @Override
+        public void update(Field f) {
+            for (int row = 0; row < f.getDimensions(); row++) {
+                for (int col = 0; col < f.getDimensions(); col++) {
+                    Object actor = f.getObjectAt(new Location(row, col));
+                    if (actor != null) {
+                        stats.incrementCount(actor);
+                        if (actor instanceof Agent) {
+                            Agent ag = (Agent) actor;
+                            this.drawMark(col, row, colors.get(ag.getStatus().getClass()));
+                        }
+                    } else
+                        this.drawMark(col, row, GUIData.EMP_COL);
+                }
+            }
+            repaint();
         }
 
         /**
          * Prepare for a new round of painting. Since the component
          * may be resized, compute the scaling factor again.
          */
-        public void preparePaint() {
-            if (!size.equals(getSize())) {  // if the size has changed...
+        private void preparePaint() {
+            if (!size.equals(getSize())) {
                 size = getSize();
-                fieldImage = fieldView.createImage(size.width, size.height);
+                fieldImage = this.createImage(size.width, size.height);
                 g = fieldImage.getGraphics();
                 xScale = size.width / gridWidth;
                 if (xScale < 1)
-                    xScale = GRID_VIEW_SCALING_FACTOR;
+                    xScale = SCALING_FACTOR;
                 yScale = size.height / gridHeight;
                 if (yScale < 1)
-                    yScale = GRID_VIEW_SCALING_FACTOR;
+                    yScale = SCALING_FACTOR;
             }
         }
 
-        /**
-         * Paint on grid location on this field in a given color.
-         */
-        public void drawMark(int x, int y, Color color) {
+        private void drawMark(int x, int y, Color color) {
             g.setColor(color);
             g.fillRect(x * xScale, y * yScale, xScale-1, yScale-1);
         }
 
+        @Override
         public void paint(Graphics g) {
             if (fieldImage != null) {
                 g.drawImage(fieldImage, 0, 0, null);

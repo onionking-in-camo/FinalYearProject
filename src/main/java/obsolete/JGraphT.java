@@ -1,4 +1,4 @@
-package environment;
+package obsolete;
 
 import actors.Agent;
 import actors.AgentGenerator;
@@ -6,6 +6,8 @@ import actors.Entity;
 import com.google.common.base.Supplier;
 import com.mxgraph.canvas.mxGraphics2DCanvas;
 import edu.uci.ics.jung.algorithms.layout.FRLayout2;
+import environment.Edge;
+import environment.Location;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.drawing.FRLayoutAlgorithm2D;
 import org.jgrapht.alg.drawing.model.MapLayoutModel2D;
@@ -16,7 +18,7 @@ import com.mxgraph.swing.*;
 import com.mxgraph.layout.*;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
-
+//import java.util.function.Supplier;
 import javax.swing.*;
 
 public class JGraphT {
@@ -41,19 +43,21 @@ public class JGraphT {
         }
     }
 
+    static class NodeFac implements java.util.function.Supplier<Entity> {
+        int x = 0;
+        int y = 0;
+        AgentGenerator gen = new AgentGenerator();
+        @Override
+        public Entity get() {
+            x++;
+            y++;
+            return gen.generate(new Location(x, y));
+        }
+    }
+
     public static void main(String[] args) {
         DefaultUndirectedGraph<Entity, Edge> g = new DefaultUndirectedGraph<>(Edge.class);
-        g.setVertexSupplier(new java.util.function.Supplier<Entity>() {
-            int x = 0;
-            int y = 0;
-            AgentGenerator gen = new AgentGenerator();
-            @Override
-            public Entity get() {
-                x++;
-                y++;
-                return gen.generate(new Location(x, y));
-            }
-        });
+        g.setVertexSupplier(new NodeFac());
         g.setEdgeSupplier(new EdgeFac());
 
 

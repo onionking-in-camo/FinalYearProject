@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 import data.SimData;
+import environment.Field;
 import environment.Grid;
 import environment.Location;
 import environment.Direction;
@@ -36,7 +37,10 @@ public class Agent extends Entity {
         actions.add(3, new MoveForward());
         actions.add(4, new MoveRandom());
 
-        durationOfIllness = SimData.getRandom().nextInt(SimData.INFECTIOUS_PERIOD_MAX - SimData.INFECTIOUS_PERIOD_MIN) + SimData.INFECTIOUS_PERIOD_MIN;
+        // randomly generate a number that reflects the duration that the agent will be sick, if infected
+        durationOfIllness = SimData.getRandom().nextInt(
+                SimData.INFECTIOUS_PERIOD_MAX - SimData.INFECTIOUS_PERIOD_MIN) + SimData.INFECTIOUS_PERIOD_MIN;
+        // set the direction in which the agent will initially move
         direction = Direction.getRandomDirection();
     }
 
@@ -47,9 +51,9 @@ public class Agent extends Entity {
      *
      * @param f the field of play
      */
-    public void act(Grid f) {
+    public void act(Field<Entity, Location> f) {
         see(f);
-        processDisease(f);
+        processDisease();
         for (Action action : actions) {
             if (action.act(f))
                 break;
@@ -80,18 +84,22 @@ public class Agent extends Entity {
         symptomatic = b;
     }
 
+    public Direction getDirection() {
+        return direction;
+    }
+
     /*
      * Defines the actions that an Agent is capable of
      * making.
      *
      */
     interface Action {
-        boolean act(Grid f);
+        boolean act(Field<Entity, Location> f);
     }
 
     private class MoveRandom implements Action {
         @Override
-        public boolean act(Grid f) {
+        public boolean act(Field<Entity, Location> f) {
             Location to = f.freeAdjacentLocation(getLocation());
             if (to != null) {
                 move(f, to);
@@ -103,17 +111,14 @@ public class Agent extends Entity {
 
     private class Quarantine implements Action {
         @Override
-        public boolean act(Grid f) {
-            if (symptomatic && getStatus().getClass() == Infected.class) {
-                return true;
-            }
-            return false;
+        public boolean act(Field<Entity, Location> f) {
+            return symptomatic && getStatus().getClass() == Infected.class;
         }
     }
 
     private class Turn implements Action {
         @Override
-        public boolean act(Grid f) {
+        public boolean act(Field<Entity, Location> f) {
             if (percepts.contains(Percept.OBSTACLE_IN_FRONT)) {
                 if (SimData.getRandom().nextDouble() < 0.5)
                     direction = direction.turnRight(direction);
@@ -127,12 +132,12 @@ public class Agent extends Entity {
 
     private class MoveDistanced implements Action {
         @Override
-        public boolean act(Grid f) {
+        public boolean act(Field<Entity, Location> f) {
             if (distancing) {
                 List<Location> freeLocations = f.getAllFreeAdjacentLocations(getLocation());
                 if (!freeLocations.isEmpty()) {
                     Location best = null;
-                    int fewestNeighbours = 9;
+                    int fewestNeighbours = Integer.MAX_VALUE;
                     for (Location l : freeLocations) {
                         int x = f.getAllNeighbours(l, Agent.class).size();
                         if (x < fewestNeighbours) {
@@ -151,7 +156,7 @@ public class Agent extends Entity {
 
     private class MoveForward implements Action {
         @Override
-        public boolean act(Grid f) {
+        public boolean act(Field<Entity, Location> f) {
             if (!percepts.contains(Percept.OBSTACLE_IN_FRONT)) {
                 Location to = Location.getLocationInDirection(getLocation(), direction);
                 move(f, to);
@@ -164,9 +169,14 @@ public class Agent extends Entity {
      * End of actions.
      */
 
-    private void move(Grid f, Location to) {
+    /**
+     * Move from current location, to new location.
+     * @param f - the field representation
+     * @param to - the location to move to
+     */
+    private void move(Field<Entity, Location> f, Location to) {
         f.clearLocation(this.getLocation());
-        f.place(this, to);
+        f.place(to, this);
         this.setLocation(to);
     }
 
@@ -175,18 +185,16 @@ public class Agent extends Entity {
      * environment) are present, and adds them to its beliefs.
      * @param f
      */
-    private void see(Grid f) {
+    private void see(Field<Entity, Location> f) {
         // look for obstacles
-        if (f.pathObstructed(getLocation(), direction)) percepts.add(Percept.OBSTACLE_IN_FRONT);
+        if (f.pathObstructed(this)) percepts.add(Percept.OBSTACLE_IN_FRONT);
         else percepts.remove(Percept.OBSTACLE_IN_FRONT);
     }
 
-    private void processDisease(Grid f) {
+    private void processDisease() {
         if (status instanceof Infected) {
-            if (durationOfIllness == 0)
-                status = status.nextState();
-            else
-                durationOfIllness--;
+            if (durationOfIllness == 0) status = status.nextState();
+            else durationOfIllness--;
         }
     }
 }

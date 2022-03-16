@@ -1,18 +1,12 @@
 package main;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
-import actors.EntityGenerator;
 import actors.Agent;
-import actors.AgentGenerator;
 import actors.Entity;
+import data.GUIData;
 import data.SimData;
 import data.SimulationRecord;
-import environment.Grid;
-import environment.FieldStats;
-import environment.Location;
+import environment.*;
 import io.CSVWriter;
 import models.Infected;
 import models.Recovered;
@@ -29,10 +23,10 @@ import java.beans.PropertyChangeSupport;
 public class Simulator {
 
     private int step;
-    private Grid grid;
+    private Field field;
     private GraphView graph;
     private SimulatorView view;
-    private ArrayList<Agent> agents;
+    private List<Agent> agents;
     private FieldStats stats;
     private SimulationRecord record;
     private PropertyChangeSupport supp;
@@ -48,24 +42,35 @@ public class Simulator {
      * @param width Width of the field. Must be greater than zero.
      */
     public Simulator(int depth, int width) {
-        grid = new Grid(depth, width);
-        view = new SimulatorView(depth, width);
-        view.setColor(Susceptible.class, SimData.SUSCEPTIBLE_COLOR);
-        view.setColor(Infected.class, SimData.INFECTED_COLOR);
-        view.setColor(Recovered.class, SimData.RECOVERED_COLOR);
+        field = new Grid(depth, width);
+//        field = new Network();
+        view = new SimulatorView(depth, width, field);
+        view.setColor(Susceptible.class, GUIData.SUS_COL);
+        view.setColor(Infected.class, GUIData.INF_COL);
+        view.setColor(Recovered.class, GUIData.REC_COL);
         stats = new FieldStats();
         record = new SimulationRecord();
         record.addHeader(new String[] {
-                "Seed", "Ag Prob.", "Ag0 Prob.", "Infectiousness", "Social Distancing?", "Mask Mandate?", "Quarantining?"
+                "Seed",
+                "Ag Prob.",
+                "Ag0 Prob.",
+                "Infectiousness",
+                "Social Distancing",
+                "Mask Mandate",
+                "Quarantining",
+                "Field type"
         });
         record.addHeader(new String[] {
-                String.valueOf(SimData.SEED), String.valueOf(SimData.AGENT_PROB), String.valueOf(SimData.AGENT_ZERO_PROB),
-                String.valueOf(SimData.INFECTIVITY), String.valueOf(SimData.SOCIAL_DISTANCING),
-                String.valueOf(SimData.MASK_MANDATE), String.valueOf(SimData.QUARANTINING)
+                String.valueOf(SimData.SEED),
+                String.valueOf(SimData.AGENT_PROB),
+                String.valueOf(SimData.AGENT_ZERO_PROB),
+                String.valueOf(SimData.INFECTIVITY),
+                String.valueOf(SimData.SOCIAL_DISTANCING),
+                String.valueOf(SimData.MASK_MANDATE),
+                String.valueOf(SimData.QUARANTINING),
+                field.getClass().getSimpleName()
         });
-        record.addHeader(new String[] {
-                "Susceptible", "Infected", "Recovered"
-        });
+        record.addHeader(new String[] {"Susceptible", "Infected", "Recovered"});
         agents = new ArrayList<>();
         supp = new PropertyChangeSupport(this);
         graph = new GraphView(this);
@@ -96,11 +101,11 @@ public class Simulator {
         finished = false;
         populate();
         updateRecord();
-        view.showStatus(step, grid);
+        view.showStatus(step, field);
     }
 
     public void simulate() {
-        while (view.isViable(grid)) {
+        while (view.isViable()) {
             simulateStep();
             updateRecord();
         }
@@ -113,7 +118,7 @@ public class Simulator {
      * @param steps The number of steps to run for.
      */
     public void simulate(int steps) {
-        for (int step = 1; step <= steps && view.isViable(grid); step++) {
+        for (int step = 1; step <= steps && view.isViable(); step++) {
             simulateStep();
         }
     }
@@ -137,54 +142,59 @@ public class Simulator {
     }
 
     private void simulateStep() {
-        Grid temp = grid.cloneField();
 
         // register all susceptible agents who are in
         // close contact with an infected agent
         List<Agent> contacts = new ArrayList<>();
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
             Agent ag = it.next();
-            if (ag.getStatus().getClass() == Susceptible.class && nearInfected(temp, ag)) {
+            if (ag.getStatus().getClass() == Susceptible.class && nearInfected(field, ag)) {
                 contacts.add(ag);
             }
         }
 
+        List<Agent> toInf = new ArrayList<>();
+
         // transmit contagion to contacts according to infection rate
         contacts.forEach(ag -> {
-            List<Entity> neighbours = temp.getAllNeighbours(ag.getLocation(), Agent.class);
-            List<Entity> infectedNeighbours = neighbours.stream().filter(this::isInfected).toList();
+            List<Agent> infectedNeighbours = field
+                    .getAllNeighbours(ag.getLocation(), Agent.class)
+                    .stream()
+                    .filter(this::isInfected)
+                    .toList();
             // prob will represent the chance that an agent will not be infected
             double prob = 1.0;
-            for (Entity e : infectedNeighbours) {
-                Agent x = (Agent) e;
+            for (Agent e : infectedNeighbours) {
+//                Agent x = (Agent) e;
                 double infectionRate = SimData.INFECTIVITY;
                 // if infected agent is masked, reduce the infection rate
-                if (x.getMasked()) {
+                if (e.getMasked()) {
                     infectionRate *= SimData.MASK_WEARING_REDUCTION;
                 }
                 prob *= (1.0 - infectionRate);
             }
             double infectionProb = 1.0 - prob;
-            if (SimData.getRandom().nextDouble() < infectionProb)
-                ag.setStatus(ag.getStatus().nextState());
+            if (SimData.getRandom().nextDouble() < infectionProb) { toInf.add(ag); }
         });
 
         // have all agents act
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
             Agent ag = it.next();
-            ag.act(temp);
+            ag.act(field);
         }
 
-        // set the old field to the updated field
-        grid = temp;
+        for (Agent a : toInf) {
+            a.setStatus(a.getStatus().nextState());
+        }
+
         step++;
-        view.showStatus(step, grid);
+        view.showStatus(step, field);
 
         // slow down the simulation
-        try { Thread.sleep(70);	} catch (Exception e) { /* TODO: handle exception */ }
+        try { Thread.sleep(100);	} catch (Exception e) { /* TODO: handle exception */ }
     }
 
-    private boolean isInfected(Entity e) {
+    private boolean isInfected(Object e) {
         if (e instanceof Agent) {
             Agent ag = (Agent) e;
             return ag.getStatus().getClass() == Infected.class;
@@ -192,7 +202,7 @@ public class Simulator {
         return false;
     }
 
-    private boolean nearInfected(Grid f, Agent ag) {
+    private boolean nearInfected(Field f, Agent ag) {
         List<Entity> neighbours = f.getAllNeighbours(ag.getLocation(), Agent.class);
         for (Iterator<Entity> it = neighbours.iterator(); it.hasNext();) {
             if (isInfected(it.next())) {
@@ -203,27 +213,35 @@ public class Simulator {
     }
 
     private void populate() {
-        grid.clear();
-        EntityGenerator<Entity> generator = new AgentGenerator();
-        for (int row = 0; row < grid.getDepth(); row++) {
-            for (int col = 0; col < grid.getWidth(); col++) {
-                Location location = new Location(row, col);
-                if (grid.getObjectAt(location) == null) {
-                    Entity ag = generator.generate(location);
-                    if (ag instanceof Agent) {
-                        Agent a = (Agent) ag;
-                        if (ag != null) {
-                            grid.place(ag, location);
-                            this.agents.add(a);
-                        }
-                    }
-                }
-            }
-        }
+//        grid.clear();
+//        grid.clearAll();
+        field.initialise();
+        agents = field.getAllEntities().stream().filter((e) -> e instanceof Agent).toList();
+//        grid.populate();
+//        EntityGenerator<Entity> generator = new AgentGenerator();
+////        for (int row = 0; row < grid.getDepth(); row++) {
+//        for (int row = 0; row < grid.getDimensions(); row++) {
+////            for (int col = 0; col < grid.getWidth(); col++) {
+//            for (int col = 0; col < grid.getDimensions(); col++) {
+//                Location location = new Location(row, col);
+//                if (grid.getObjectAt(location) == null) {
+//                    Entity ag = generator.generate(location);
+//                    if (ag instanceof Agent) {
+//                        Agent a = (Agent) ag;
+//                        if (ag != null) {
+////                            grid.place(ag, location);
+//                            grid.place(location, ag);
+//                            this.agents.add(a);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+        System.out.println(agents.size());
     }
 
     private void updateRecord() {
-        record.addRecord(stats.getClassCount(grid,
+        record.addRecord(stats.getClassCount(field,
                 Arrays.asList(Susceptible.class, Infected.class, Recovered.class)));
         supp.firePropertyChange("record", null, record.getData());
     }
