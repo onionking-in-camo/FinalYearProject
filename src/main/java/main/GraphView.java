@@ -34,15 +34,15 @@ public class GraphView extends JFrame implements PropertyChangeListener {
         XYSeries sus = graph.addSeries("Susceptible", initData[0], initData[1]);
         sus.setMarker(new Circle()).setMarkerColor(GUIData.SUS_COL);
         sus.setLineColor(GUIData.SUS_COL);
-        sus.setSmooth(true);
+//        sus.setSmooth(true);
         XYSeries inf = graph.addSeries("Infected", initData[0], initData[1]);
         inf.setMarker(new Circle()).setMarkerColor(GUIData.INF_COL);
         inf.setLineColor(GUIData.INF_COL);
-        inf.setSmooth(true);
+//        inf.setSmooth(true);
         XYSeries rec = graph.addSeries("Recovered", initData[0], initData[1]);
         rec.setMarker(new Circle()).setMarkerColor(GUIData.REC_COL);
         rec.setLineColor(GUIData.REC_COL);
-        rec.setSmooth(true);
+//        rec.setSmooth(true);
         setTitle("Simulation Graph");
         setLocation(GUIData.GRAPH_X, GUIData.GRAPH_Y);
         g = new XChartPanel<XYChart>(graph);

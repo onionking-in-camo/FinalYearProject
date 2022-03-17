@@ -58,8 +58,8 @@ public class SimulatorView extends JFrame {
             view = new FieldView(height, width);
         }
 
-        if (f instanceof Network) {
-            view = new NetworkView((Network) f, height, width);
+        if (f instanceof MobileNetwork) {
+            view = new NetworkView((MobileNetwork) f, height, width);
         }
 
         Container contents = getContentPane();
@@ -138,9 +138,9 @@ public class SimulatorView extends JFrame {
     private class NetworkView extends AbstractView {
 
         private VisualizationImageServer vs;
-        private Network f;
+        private MobileNetwork f;
 
-        public NetworkView(Network f, int height, int width) {
+        public NetworkView(MobileNetwork f, int height, int width) {
             super(height, width);
             this.f = f;
         }

@@ -195,10 +195,14 @@ public class Main {
 
         stepOnceButton.addActionListener((e) -> {
             new Thread(() -> {
+                if (s.hasFinished()) {
+                    save();
+                    return;
+                }
                 runOnce();
                 mainFrame.setVisible(true);
             }).start();
-            mainFrame.setVisible(false);
+//            mainFrame.setVisible(false);
         });
 
         runLongButton.addActionListener((e) -> {

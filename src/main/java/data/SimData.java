@@ -23,12 +23,14 @@ public class SimData {
     public static int WIDTH = 100;
     // default seed for the simulation model
     public static int SEED = 9;
+    // default run speed
+    public static int RUN_DELAY = 100;
     // default runtime
     public static int RUNTIME = 100;
     // default probability that an Agent will be generated
-    public static double AGENT_PROB = 0.04;
+    public static double AGENT_PROB = 0.9;
     // default probability that an Infected Agent will be generated
-    public static double AGENT_ZERO_PROB = 0.01;
+    public static double AGENT_ZERO_PROB = 0.1;
     // default flags for policies
     public static boolean SOCIAL_DISTANCING = false;
     public static boolean MASK_MANDATE = false;

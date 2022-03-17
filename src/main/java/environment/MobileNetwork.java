@@ -19,14 +19,14 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class Network implements Field<Entity, Location> {
+public class MobileNetwork implements Field<Entity, Location> {
 
     private ModifiableSparseGraph<Location, Edge> gg;
     private Supplier<Location> nodeSupplier;
     private Supplier<Edge> edgeSupplier;
     private Function<Location, Paint> nodePainter;
 
-    public Network() {}
+    public MobileNetwork() {}
 
     class GraphFactory implements Supplier<Graph<Location, Edge>> {
         @Override
@@ -58,7 +58,8 @@ public class Network implements Field<Entity, Location> {
         setNodeSupplier(new NodeFactory());
         setEdgeSupplier(new EdgeFactory());
         setPaint(new NodePainter());
-        createSmallWorld(12, 0.5);
+//        createSmallWorld(12, 0.5);
+        createFreeScaleWorld(15, 3);
     }
 
     @Override

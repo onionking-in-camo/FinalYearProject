@@ -33,9 +33,9 @@ public class Agent extends Entity {
         actions = new ArrayList<>();
         actions.add(0, new Quarantine());
         actions.add(1, new MoveDistanced());
-        actions.add(2, new Turn());
-        actions.add(3, new MoveForward());
-        actions.add(4, new MoveRandom());
+//        actions.add(2, new Turn());
+//        actions.add(3, new MoveForward());
+        actions.add(2, new MoveRandom());
 
         // randomly generate a number that reflects the duration that the agent will be sick, if infected
         durationOfIllness = SimData.getRandom().nextInt(
