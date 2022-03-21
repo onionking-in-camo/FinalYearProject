@@ -58,8 +58,8 @@ public class MobileNetwork implements Field<Entity, Location> {
         setNodeSupplier(new NodeFactory());
         setEdgeSupplier(new EdgeFactory());
         setPaint(new NodePainter());
-//        createSmallWorld(12, 0.5);
-        createFreeScaleWorld(15, 3);
+        createSmallWorld(12, 0.5);
+//        createFreeScaleWorld(100, 3);
     }
 
     @Override
@@ -192,7 +192,7 @@ public class MobileNetwork implements Field<Entity, Location> {
         BarabasiAlbertGenerator<Location, Edge> gen = new BarabasiAlbertGenerator<>(
                 new GraphFactory(), nodeSupplier, edgeSupplier, vertices, edges, SimData.SEED, new HashSet<>()
         );
-        gen.evolveGraph(50);
+        gen.evolveGraph(vertices);
         gg = (ModifiableSparseGraph<Location, Edge>) gen.get();
     }
 
@@ -239,8 +239,6 @@ public class MobileNetwork implements Field<Entity, Location> {
         int col = 0;
         @Override
         public Location get() {
-//            row++;
-//            col++;
             Location loc = new Location(row++, col++);
             Entity e = gen.generate(loc);
             loc.addOccupant(e);

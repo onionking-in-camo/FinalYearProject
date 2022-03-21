@@ -191,7 +191,7 @@ public class Agent extends Entity {
         else percepts.remove(Percept.OBSTACLE_IN_FRONT);
     }
 
-    private void processDisease() {
+    public void processDisease() {
         if (status instanceof Infected) {
             if (durationOfIllness == 0) status = status.nextState();
             else durationOfIllness--;

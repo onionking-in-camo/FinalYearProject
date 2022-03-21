@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.*;
+import java.awt.event.ActionListener;
 import javax.swing.*;
 import javax.swing.border.*;
 
@@ -24,5 +25,9 @@ public class LabelledCheckBox extends JComponent {
     public boolean getValue() {
         boolean value = box.isSelected();
         return value;
+    }
+
+    public void addActionListener(ActionListener al) {
+        box.addActionListener(al);
     }
 }

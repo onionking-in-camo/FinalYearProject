@@ -1,23 +1,22 @@
 package environment;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import data.SimData;
 
-public class StaticEdge {
+import java.util.Random;
 
-    private List<String> types = Arrays.asList(
-            "NO_RELATION", "ACQUAINTANCE", "COLLEAGUE",
-            "FRIEND", "RELATIVE"
-    );
-    private String edgeType;
+public abstract class StaticEdge {
+    public abstract Class<? extends StaticEdge> getEdgeType();
+    public abstract double getInfectionRate();
 
-    public StaticEdge() {
-        Collections.shuffle(types);
-        edgeType = types.get(0);
-    }
+    public static StaticEdge generateEdge() {
+        Random r = SimData.getRandom();
+        double d = r.nextDouble();
 
-    public String getEdgeType() {
-        return edgeType;
+        if (d < 0.33) { return new RelativeEdge(); }
+
+        if (d < 0.67) { return new FriendEdge(); }
+
+        return new NoRelationEdge();
+
     }
 }

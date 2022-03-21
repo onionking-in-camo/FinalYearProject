@@ -31,8 +31,8 @@ public class AgentGenerator extends EntityGenerator<Entity> {
                 ag.setSymptomatic(true);
             return ag;
         }
-        else return new Agent(l);
-//        return null;
+//        else return new Agent(l);
+        return null;
     }
 
 

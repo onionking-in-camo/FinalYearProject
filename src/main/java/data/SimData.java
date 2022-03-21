@@ -1,5 +1,7 @@
 package data;
 
+import environment.Grid;
+
 import java.awt.Color;
 import java.util.Random;
 
@@ -28,9 +30,9 @@ public class SimData {
     // default runtime
     public static int RUNTIME = 100;
     // default probability that an Agent will be generated
-    public static double AGENT_PROB = 0.9;
+    public static double AGENT_PROB = 0.05;
     // default probability that an Infected Agent will be generated
-    public static double AGENT_ZERO_PROB = 0.1;
+    public static double AGENT_ZERO_PROB = 0.01;
     // default flags for policies
     public static boolean SOCIAL_DISTANCING = false;
     public static boolean MASK_MANDATE = false;
@@ -44,8 +46,10 @@ public class SimData {
     // default likelihood that an Infected entity will show symptoms
     public static double SYMPTOMATIC = 0.33;
     // default probability that infection spreads given contact between relevant entities
-    public static double INFECTIVITY = 0.25;
+    public static double INFECTIVITY = 0.33;
     // min and max for sickness duration
     public static int INFECTIOUS_PERIOD_MIN = 14;
     public static int INFECTIOUS_PERIOD_MAX = 42;
+    // default field type
+    public static Class<?> FIELD_TYPE = Grid.class;
 }

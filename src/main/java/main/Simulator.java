@@ -42,8 +42,7 @@ public class Simulator {
      * @param width Width of the field. Must be greater than zero.
      */
     public Simulator(int depth, int width) {
-        field = new Grid(depth, width);
-//        field = new MobileNetwork();
+        setField(depth, width);
         view = new SimulatorView(depth, width, field);
         view.setColor(Susceptible.class, GUIData.SUS_COL);
         view.setColor(Infected.class, GUIData.INF_COL);
@@ -77,6 +76,15 @@ public class Simulator {
         setup = false;
         finished = false;
         reset();
+    }
+
+    private void setField(int d, int w) {
+        if (SimData.FIELD_TYPE == Grid.class) {
+            field = new Grid(d, w);
+        }
+        else if (SimData.FIELD_TYPE == MobileNetwork.class) {
+            field = new MobileNetwork();
+        }
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
@@ -142,10 +150,7 @@ public class Simulator {
         this.view.setVisible(false);
     }
 
-    private void simulateStep() {
-
-        // register all susceptible agents who are in
-        // close contact with an infected agent
+    private List<Agent> getInfectedContacts() {
         List<Agent> contacts = new ArrayList<>();
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
             Agent ag = it.next();
@@ -153,30 +158,42 @@ public class Simulator {
                 contacts.add(ag);
             }
         }
+        return contacts;
+    }
 
-        List<Agent> toInf = new ArrayList<>();
+    private List<Agent> getNewlyInfected(List<Agent> contacts) {
+        List<Agent> newlyInfected = new ArrayList<>();
 
-        // transmit contagion to contacts according to infection rate
-        contacts.forEach(ag -> {
-            List<Agent> infectedNeighbours = field
-                    .getAllNeighbours(ag.getLocation(), Agent.class)
+        for (Agent ag : contacts) {
+            List<Agent> neighbours = field.getAllNeighbours(ag.getLocation(), Agent.class);
+            List<Agent> infectedNeighbours = neighbours
                     .stream()
                     .filter(this::isInfected)
                     .toList();
-            // prob will represent the chance that an agent will not be infected
-            double prob = 1.0;
-            for (Agent e : infectedNeighbours) {
-                double infectionRate = SimData.INFECTIVITY;
-                // if infected agent is masked, reduce the infection rate
-                if (e.getMasked()) {
-                    infectionRate *= SimData.MASK_WEARING_REDUCTION;
-                }
-                prob *= (1.0 - infectionRate);
+
+            double uninfectedProb = 1.0; // the chance that the agent will remain uninfected
+
+            // for every infected neighbour, we calculate the decrease in probability
+            // that the susceptible agent will remain uninfected
+            for (Agent infectedAg : infectedNeighbours) {
+                double infRate = SimData.INFECTIVITY;
+                if (infectedAg.getMasked()) { infRate *= SimData.MASK_WEARING_REDUCTION; }
+                uninfectedProb *= (1.0 - infRate);
             }
-            // infectionProb is the probability an agent will become infected
-            double infectionProb = 1.0 - prob;
-            if (SimData.getRandom().nextDouble() < infectionProb) { toInf.add(ag); }
-        });
+
+            // the chance the susceptible agent becomes infected is the
+            // inverse of the chance that the agent remains uninfected
+            double infectedProb = 1.0 - uninfectedProb;
+            if (SimData.getRandom().nextDouble() < infectedProb)
+                newlyInfected.add(ag);
+        }
+        return newlyInfected;
+    }
+
+    private void simulateStep() {
+
+        List<Agent> contacts = getInfectedContacts();
+        List<Agent> agentsToInfect = getNewlyInfected(contacts);
 
         // have all agents act
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
@@ -184,7 +201,8 @@ public class Simulator {
             ag.act(field);
         }
 
-        for (Agent a : toInf) {
+        // update infection status of newly infected agents
+        for (Agent a : agentsToInfect) {
             a.setStatus(a.getStatus().nextState());
         }
 

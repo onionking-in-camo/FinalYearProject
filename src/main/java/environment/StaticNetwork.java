@@ -7,6 +7,7 @@ import actors.Obstacle;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import data.GUIData;
+import data.SimData;
 import edu.uci.ics.jung.algorithms.generators.random.BarabasiAlbertGenerator;
 import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
 import edu.uci.ics.jung.graph.Graph;
@@ -35,46 +36,64 @@ public class StaticNetwork {
 
     private void setup() {
         BarabasiAlbertGenerator<Entity, StaticEdge> graphGen = new BarabasiAlbertGenerator<Entity, StaticEdge>(
-                new GraphFactory(), new NodeFactory(), new EdgeFactory(), 20, 5, 10, new HashSet<>()
+                new GraphFactory(), new NodeFactory(), new EdgeFactory(), 500, 6, 10, new HashSet<>()
         );
         graphGen.evolveGraph(50);
         Graph<Entity, StaticEdge> g = graphGen.get();
+        List<Entity> allV = new ArrayList<>(g.getVertices());
+        for (Entity e : allV) {
+            if (g.inDegree(e) < 1) {
+                g.removeVertex(e);
+            }
+        }
         JFrame frame = new JFrame();
-        frame.setTitle("Hiya");
-        frame.setSize(900, 900);
+        frame.setTitle("Static Network");
+        frame.setSize(700, 700);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         VisualizationImageServer vs = new VisualizationImageServer<>(
                 new ISOMLayout<>(g),
-                new Dimension(800, 800));
+                new Dimension(600, 600));
         vs.getRenderContext().setVertexFillPaintTransformer(new NodePainter());
         frame.add(vs);
         frame.setVisible(true);
 
+        List<Entity> agentsToInfect = new ArrayList<>();
+
         for (int i = 0; i < 100; i++) {
-            List<Entity> l = new ArrayList<>(g.getVertices());
-            for (Entity e : l) {
-                Agent ag = (Agent) e;
-                if (ag.getStatus().getClass() == Susceptible.class
-                || ag.getStatus().getClass() == Infected.class) {
-                    ag.setStatus(ag.getStatus().nextState());
-                }
-                if (ag.getStatus().getClass() == Recovered.class) {
-                    ag.setStatus(new Susceptible());
-                }
-//                List<StaticEdge> edges = new ArrayList<>(g.getIncidentEdges(e));
-//                for (StaticEdge edge : edges) {
-//                    if (edge.getEdgeType() == "RELATIVE") {
-//                        Agent ag = (Agent) e;
-//                        if (ag.getStatus().getClass() == Infected.class)
-//                        ag.setStatus(ag.getStatus().nextState());
-//                    }
-//                }
-            }
-            vs.updateUI();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(200);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            agentsToInfect.clear();
+            List<Entity> l = new ArrayList<>(g.getVertices());
+            for (Entity e : l) {
+                Agent ag = (Agent) e;
+                if (ag.getStatus().getClass() == Infected.class) {
+                    ag.processDisease();
+                    continue;
+                }
+                if (ag.getStatus().getClass() != Susceptible.class) { continue; }
+                List<StaticEdge> edges = new ArrayList<>(g.getIncidentEdges(e));
+                double prob = 0;
+                for (StaticEdge edge : edges) {
+                    Agent opp = (Agent) g.getOpposite(ag, edge);
+                    if (opp.getStatus().getClass() == Infected.class) {
+                        prob += (SimData.INFECTIVITY * edge.getInfectionRate());
+                    }
+                }
+                System.out.println(prob);
+                if (prob > (SimData.INFECTIVITY * SimData.getRandom().nextDouble())) {
+                    agentsToInfect.add(ag);
+                }
+            }
+            for (Entity e : agentsToInfect) {
+                Agent ag = (Agent) e;
+                ag.setStatus(ag.getStatus().nextState());
+            }
+
+            vs.updateUI();
+
         }
     }
 
@@ -88,7 +107,7 @@ public class StaticNetwork {
     static class EdgeFactory implements Supplier<StaticEdge> {
         @Override
         public StaticEdge get() {
-            return new StaticEdge();
+            return StaticEdge.generateEdge();
         }
     }
 

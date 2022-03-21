@@ -32,27 +32,6 @@ public class FieldStats {
         valid = true;
     }
 
-    /**
-     * @return A string describing what persons are in the field.
-     */
-//    public String getPopulationDetails(Grid grid) {
-//        StringBuffer buffer = new StringBuffer();
-//        if (!valid) {
-//            generateCounts(grid);
-//        }
-//        Iterator<Class<?>> keys = counters.keySet().iterator();
-//        while (keys.hasNext()) {
-//            Counter info = counters.get(keys.next());
-//            buffer.append("[");
-//            buffer.append(info.getName());
-//            buffer.append(" -> ");
-//            buffer.append(info.getCount());
-//            buffer.append("]");
-//            buffer.append(' ');
-//        }
-//        return buffer.toString();
-//    }
-
     public String[] getClassCount(Field field, List<Class<?>> classes) {
         String[] results = new String[classes.size()];
         generateCounts2(field);
@@ -131,25 +110,6 @@ public class FieldStats {
         Counter c = counters.get(Infected.class);
         return c.getCount() > 0;
     }
-
-    /**
-     * Generate counts of the number of persons.
-     * These are not kept up to date as persons
-     * are placed in the field, but only when a request
-     * is made for the information.
-     */
-//    private void generateCounts(Grid grid) {
-//        reset();
-//        for(int row = 0; row < grid.getDepth(); row++) {
-//            for(int col = 0; col < grid.getWidth(); col++) {
-//                Object animal = grid.getObjectAt(row, col);
-//                if (animal != null) {
-//                    incrementCount(animal);
-//                }
-//            }
-//        }
-//        valid = true;
-//    }
 
     private void generateCounts2(Field field) {
         reset();

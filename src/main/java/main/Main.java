@@ -7,6 +7,9 @@ import javax.swing.border.*;
 
 import data.GUIData;
 import data.SimData;
+import environment.Grid;
+import environment.MobileNetwork;
+import environment.StaticNetwork;
 
 public class Main {
 
@@ -26,6 +29,7 @@ public class Main {
     private LabelledCheckBox socialDistancing;
     private LabelledCheckBox maskMandate;
     private LabelledCheckBox quarantining;
+
     private JButton setUpButton;
     private JButton stepOnceButton;
     private JButton runLongButton;
@@ -47,6 +51,8 @@ public class Main {
     // agent params
     private String agentProb = String.valueOf(SimData.AGENT_PROB);
     private String agentZeroProb = String.valueOf(SimData.AGENT_ZERO_PROB);
+
+    private ButtonGroup fieldGroup;
 
     private Simulator s;
 
@@ -70,12 +76,12 @@ public class Main {
         mapDepth = new LabelledTextArea("Map Depth: ", defaultSimSize);
 
         // agent params
-        agentCreationProb = new LabelledTextArea("Agent Prob.: ", agentProb);
-        agentZeroCreationProb = new LabelledTextArea("Agent Zero Prob.: ", agentZeroProb);
+        agentCreationProb = new LabelledTextArea("Agent Prob: ", agentProb);
+        agentZeroCreationProb = new LabelledTextArea("Agent Zero Prob: ", agentZeroProb);
 
         // disease params
-        infectiousness = new LabelledTextArea("Infectivity: ", defaultInfectiousness);
-        symptomaticProb = new LabelledTextArea("Symptomatic Prob.: ", defaultSymptomaticProb);
+        infectiousness = new LabelledTextArea("Infectiousness: ", defaultInfectiousness);
+        symptomaticProb = new LabelledTextArea("Symptomatic Prob: ", defaultSymptomaticProb);
         maskWearingReduction = new LabelledTextArea("Mask Risk Reduction: ", defaultMaskReduction);
 
         // compliance params
@@ -88,6 +94,28 @@ public class Main {
         maskMandate = new LabelledCheckBox("Mask Mandate: ", false);
         quarantining = new LabelledCheckBox("Quarantining: ", false);
 
+        // field options
+        JRadioButton gridBox = new JRadioButton();
+        gridBox.setEnabled(true);
+        gridBox.setSelected(true);
+        gridBox.setActionCommand("Grid");
+        gridBox.setText("Grid");
+
+        JRadioButton staticBox = new JRadioButton();
+        staticBox.setEnabled(true);
+        staticBox.setActionCommand("Static");
+        staticBox.setText("Static Network");
+
+        JRadioButton mobileBox = new JRadioButton();
+        mobileBox.setEnabled(true);
+        mobileBox.setActionCommand("Mobile");
+        mobileBox.setText("Mobile Network");
+
+        fieldGroup = new ButtonGroup();
+        fieldGroup.add(gridBox);
+        fieldGroup.add(staticBox);
+        fieldGroup.add(mobileBox);
+
         setUpButton.setText("Set up simulation");
         setUpButton.setToolTipText("Feed simulation parameters and set up simulation.");
         setUpButton.setEnabled(true);
@@ -97,7 +125,7 @@ public class Main {
         runLongButton.setText("Run");
         runLongButton.setToolTipText("Run simulation for the duration specified.");
         runLongButton.setEnabled(false);
-        runIterationsButton.setText("Run for X");
+        runIterationsButton.setText("Run for Duration");
         runIterationsButton.setToolTipText("Run a number of iterations of simulation.");
         runIterationsButton.setEnabled(false);
         resetButton.setText("Reset");
@@ -109,38 +137,118 @@ public class Main {
         mainFrame = new JFrame("Disease Simulation Setup");
         mainFrame.setLocation(GUIData.SETUP_X, GUIData.SETUP_Y);
 
-        JPanel simParamsBox = new JPanel();
+        JPanel topBox = new JPanel();
+        JPanel middleBox = new JPanel();
+        JPanel lowerBox = new JPanel();
+
+        JPanel topMiddleBox = new JPanel();
+        JPanel lowMiddleBox = new JPanel();
+
+        JPanel paramBox = new JPanel();
         JPanel commandBox = new JPanel();
         JPanel agentBox = new JPanel();
-        JPanel entitiesBox = new JPanel();
         JPanel policiesBox = new JPanel();
         JPanel diseaseBox = new JPanel();
         JPanel complianceBox = new JPanel();
-        JPanel lowerBox = new JPanel();
-        JPanel middleBox = new JPanel();
-        lowerBox.setBorder(BorderFactory.createEtchedBorder());
-        middleBox.setBorder(BorderFactory.createEtchedBorder());
+        JPanel fieldBox = new JPanel();
 
         // add borders
-        simParamsBox.setBorder(new TitledBorder("Simulation Parameters"));
+        topBox.setBorder(BorderFactory.createEtchedBorder());
+        middleBox.setBorder(BorderFactory.createEtchedBorder());
+        lowerBox.setBorder(BorderFactory.createEtchedBorder());
+        topMiddleBox.setBorder(BorderFactory.createEtchedBorder());
+        lowMiddleBox.setBorder(BorderFactory.createEtchedBorder());
+
+        paramBox.setBorder(new TitledBorder("Simulation Parameters"));
+        fieldBox.setBorder(new TitledBorder("Field Topology"));
         agentBox.setBorder(new TitledBorder("Agents"));
         policiesBox.setBorder(new TitledBorder("Policies"));
         diseaseBox.setBorder(new TitledBorder("Disease"));
         complianceBox.setBorder(new TitledBorder("Compliance"));
+        commandBox.setBorder(new TitledBorder("Commands"));
 
         // set layout
         mainFrame.getContentPane().setLayout(new BorderLayout());
-        simParamsBox.setLayout(new GridLayout(2,2));
+
+        topBox.setLayout(new GridLayout(2,1));
+        middleBox.setLayout((new GridLayout(2, 1)));
+        topMiddleBox.setLayout(new BorderLayout());
+        lowMiddleBox.setLayout(new BorderLayout());
+        lowerBox.setLayout(new GridLayout(1, 1));
+
+        paramBox.setLayout(new GridLayout(2, 2));
+        fieldBox.setLayout(new GridLayout(1,1));
+
         agentBox.setLayout(new GridLayout(2,1));
         policiesBox.setLayout(new GridLayout(3,1));
-        commandBox.setLayout(new GridLayout(5,1));
-        entitiesBox.setLayout(new BorderLayout());
+
         diseaseBox.setLayout(new GridLayout(3,1));
         complianceBox.setLayout(new GridLayout(3,1));
-        middleBox.setLayout(new BorderLayout());
-        lowerBox.setLayout(new BorderLayout());
 
-        // add components to containers
+        commandBox.setLayout(new GridLayout(3,1));
+
+        /*
+         * Start of topBox
+         */
+        paramBox.add(simLength);
+        paramBox.add(mapWidth);
+        paramBox.add(simSeed);
+        paramBox.add(mapDepth);
+
+        fieldBox.add(gridBox);
+        fieldBox.add(staticBox);
+        fieldBox.add(mobileBox);
+
+        topBox.add(paramBox);
+        topBox.add(fieldBox);
+        /*
+         * End of topBox
+         */
+
+        /*
+         * Start of middleBox
+         */
+            /*
+             * Start of topMiddleBox
+             */
+            agentBox.add(agentCreationProb);
+            agentBox.add(agentZeroCreationProb);
+
+            policiesBox.add(socialDistancing);
+            policiesBox.add(maskMandate);
+            policiesBox.add(quarantining);
+
+            topMiddleBox.add(agentBox, BorderLayout.CENTER);
+            topMiddleBox.add(policiesBox, BorderLayout.EAST);
+            /*
+             * End of topMiddleBox
+             */
+
+            /*
+             * Start of lowMiddleBox
+             */
+            diseaseBox.add(infectiousness);
+            diseaseBox.add(symptomaticProb);
+            diseaseBox.add(maskWearingReduction);
+
+            complianceBox.add(maskWearingCompliance);
+            complianceBox.add(socialDistancingCompliance);
+            complianceBox.add(quarantineCompliance);
+
+            lowMiddleBox.add(diseaseBox, BorderLayout.CENTER);
+            lowMiddleBox.add(complianceBox, BorderLayout.EAST);
+            /*
+             * End of lowMiddleBox
+             */
+        middleBox.add(topMiddleBox, BorderLayout.NORTH);
+        middleBox.add(lowMiddleBox, BorderLayout.SOUTH);
+        /*
+         * End of middleBox
+         */
+
+        /*
+         * Start of lowerBox
+         */
         commandBox.add(setUpButton);
         commandBox.add(resetButton);
         commandBox.add(stepOnceButton);
@@ -148,35 +256,13 @@ public class Main {
         commandBox.add(runIterationsButton);
         commandBox.add(quitButton);
 
-        simParamsBox.add(simLength);
-        simParamsBox.add(mapWidth);
-        simParamsBox.add(simSeed);
-        simParamsBox.add(mapDepth);
+        lowerBox.add(commandBox, BorderLayout.CENTER);
+        /*
+         * End of lowerBox
+         */
 
-        agentBox.add(agentCreationProb);
-        agentBox.add(agentZeroCreationProb);
-
-        policiesBox.add(socialDistancing);
-        policiesBox.add(maskMandate);
-        policiesBox.add(quarantining);
-
-        diseaseBox.add(infectiousness);
-        diseaseBox.add(this.symptomaticProb);
-        diseaseBox.add(this.maskWearingReduction);
-
-        complianceBox.add(this.maskWearingCompliance);
-        complianceBox.add(this.socialDistancingCompliance);
-        complianceBox.add(this.quarantineCompliance);
-
-        entitiesBox.add(agentBox, BorderLayout.CENTER);
-        entitiesBox.add(policiesBox, BorderLayout.WEST);
-        middleBox.add(complianceBox, BorderLayout.CENTER);
-        middleBox.add(diseaseBox, BorderLayout.WEST);
-        lowerBox.add(entitiesBox, BorderLayout.NORTH);
-        lowerBox.add(middleBox, BorderLayout.CENTER);
-        lowerBox.add(commandBox, BorderLayout.SOUTH);
-
-        mainFrame.getContentPane().add(simParamsBox, BorderLayout.NORTH);
+        mainFrame.getContentPane().add(topBox, BorderLayout.NORTH);
+        mainFrame.getContentPane().add(middleBox, BorderLayout.CENTER);
         mainFrame.getContentPane().add(lowerBox, BorderLayout.SOUTH);
 
         // set event handlers
@@ -189,9 +275,9 @@ public class Main {
             }
         });
 
-        quitButton.addActionListener((e) -> { exitApp(); });
+        quitButton.addActionListener((e) -> exitApp());
 
-        resetButton.addActionListener((e) -> { reset(); });
+        resetButton.addActionListener((e) -> reset());
 
         stepOnceButton.addActionListener((e) -> {
             new Thread(() -> {
@@ -262,6 +348,17 @@ public class Main {
             boolean distancing = socialDistancing.getValue();
             boolean masks = maskMandate.getValue();
             boolean quarantine = quarantining.getValue();
+            String fieldType = fieldGroup.getSelection().getActionCommand();
+            Class fieldClass = null;
+            if (fieldType.equals("Grid")) {
+                fieldClass = Grid.class;
+            }
+            else if (fieldType.equals("Static")) {
+                fieldClass = StaticNetwork.class;
+            }
+            else {
+                fieldClass = MobileNetwork.class;
+            }
 
             SimData.RUNTIME = runtime;
             SimData.SEED = seed;
@@ -272,6 +369,7 @@ public class Main {
             SimData.SOCIAL_DISTANCING = distancing;
             SimData.MASK_MANDATE = masks;
             SimData.QUARANTINING = quarantine;
+            SimData.FIELD_TYPE = fieldClass;
 
             try {
                 s = new Simulator();
@@ -285,7 +383,6 @@ public class Main {
             runLongButton.setEnabled(true);
             runIterationsButton.setEnabled(true);
             resetButton.setEnabled(true);
-
         }
         catch (Exception e) {
             JOptionPane.showMessageDialog(mainFrame,
