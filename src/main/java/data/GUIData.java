@@ -22,4 +22,5 @@ public class GUIData {
     public static final Color OBS_COL = new Color(139, 69, 19); // saddlebrown
     public static final Color EMP_COL = new Color(224, 224, 224); // grey
     public static final Color DEF_COL = new Color(255, 255, 255); // white
+    public static final Color QU_COL = new Color(200, 200, 0); // yellowish
 }

@@ -31,21 +31,22 @@ public class StaticNetwork {
     public static void main(String[] args) {
         StaticNetwork sn = new StaticNetwork();
         sn.setup();
-
     }
 
     private void setup() {
         BarabasiAlbertGenerator<Entity, StaticEdge> graphGen = new BarabasiAlbertGenerator<Entity, StaticEdge>(
-                new GraphFactory(), new NodeFactory(), new EdgeFactory(), 500, 6, 10, new HashSet<>()
+                new GraphFactory(), new NodeFactory(), new EdgeFactory(), SimData.WIDTH * SimData.WIDTH, 6, 10, new HashSet<>()
         );
+
         graphGen.evolveGraph(50);
         Graph<Entity, StaticEdge> g = graphGen.get();
         List<Entity> allV = new ArrayList<>(g.getVertices());
         for (Entity e : allV) {
-            if (g.inDegree(e) < 1) {
+            if (g.inDegree(e) < 1 || g.outDegree(e) < 1) {
                 g.removeVertex(e);
             }
         }
+        System.out.println(g.getVertices().size());
         JFrame frame = new JFrame();
         frame.setTitle("Static Network");
         frame.setSize(700, 700);
@@ -70,7 +71,7 @@ public class StaticNetwork {
             for (Entity e : l) {
                 Agent ag = (Agent) e;
                 if (ag.getStatus().getClass() == Infected.class) {
-                    ag.processDisease();
+//                    ag.processDisease();
                     continue;
                 }
                 if (ag.getStatus().getClass() != Susceptible.class) { continue; }

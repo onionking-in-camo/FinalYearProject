@@ -49,10 +49,6 @@ public class Location {
         return (row << 16) + col;
     }
 
-    public void addOccupant(Entity e) {
-        occupant = e;
-    }
-
     public Entity getOccupant() {
         return occupant;
     }

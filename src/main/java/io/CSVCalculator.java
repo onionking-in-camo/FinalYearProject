@@ -1,11 +1,26 @@
 package io;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CSVCalculator {
+
+    public static void main(String[] args) {
+        String prefix = "C:\\Users\\james\\uni-work\\FinalYearProject\\src\\main\\resources\\";
+        CSVCalculator calc = new CSVCalculator(3);
+        calc.addRelation(CSVReader.readCSV(prefix + "MMT_SDT_QUT/010_001/seed1.csv"));
+        calc.addRelation(CSVReader.readCSV(prefix + "MMT_SDT_QUT/010_001/seed3.csv"));
+        calc.addRelation(CSVReader.readCSV(prefix + "MMT_SDT_QUT/010_001/seed8.csv"));
+        CSVWriter out = new CSVWriter();
+        try {
+            out.writeCSVFromList(calc.computeAverage(), prefix + "MMT_SDT_QUT/010_001_avg");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     private int cols;
     private List<List<List<String>>> relations;
@@ -22,17 +37,19 @@ public class CSVCalculator {
     public List<List<String>> computeAverage() {
         List<List<String>> average = new ArrayList<List<String>>();
         int dim = getBiggestRelation();
-        for (int i = 0; i < dim; i++) {
+        for (int i = 3; i < dim; i++) {
             List<List<String>> rows = new ArrayList<>();
             for (List<List<String>> relation : relations) {
                 if (i < relation.size())
                     rows.add(relation.get(i));
                 else {
                     List<String> zeroes = new ArrayList<>();
-                    for (int j = 0; j < cols; j++) {
-                        zeroes.add("0");
-                    }
-                    rows.add(zeroes);
+//                    for (int j = 0; j < cols; j++) {
+////                        zeroes.add("0");
+////
+//                    }
+//                    rows.add(zeroes);
+                    rows.add(relation.get(relation.size() - 1));
                 }
             }
             List<String> averageRow = new ArrayList<>();

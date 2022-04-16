@@ -28,6 +28,21 @@ public class MobileNetwork implements Field<Entity, Location> {
 
     public MobileNetwork() {}
 
+    @Override
+    public void registerZone(Set<Location> zoneLocations) {
+
+    }
+
+    @Override
+    public void deregisterZone(Set<Location> zoneLocations) {
+
+    }
+
+    @Override
+    public Set<Location> getZone() {
+        return null;
+    }
+
     class GraphFactory implements Supplier<Graph<Location, Edge>> {
         @Override
         public Graph<Location, Edge> get() {
@@ -58,15 +73,16 @@ public class MobileNetwork implements Field<Entity, Location> {
         setNodeSupplier(new NodeFactory());
         setEdgeSupplier(new EdgeFactory());
         setPaint(new NodePainter());
-        createSmallWorld(12, 0.5);
-//        createFreeScaleWorld(100, 3);
+        if (gg == null) {
+            createSmallWorld();
+        }
     }
 
     @Override
     public void clearAll() {
         List<Location> vertices = gg.getVertices().stream().toList();
         for (Location l : vertices) {
-            l.addOccupant(null);
+            l.setOccupant(null);
         }
     }
 
@@ -91,7 +107,14 @@ public class MobileNetwork implements Field<Entity, Location> {
             return l.getOccupant();
         }
         return null;
-    };
+    }
+
+    @Override
+    public List<Location> getAllAdjacentLocations(Location location) {
+        return null;
+    }
+
+    ;
 
     /**
      * Returns a list of all nodes, connected to location l, which
@@ -134,7 +157,7 @@ public class MobileNetwork implements Field<Entity, Location> {
 
     @Override
     public <T extends Entity> boolean isNeighbourTo(Location l, Class<T> c) {
-        List<Entity> neighbours = getAllNeighbours(l, c);
+        List<T> neighbours = getAllNeighbours(l, c);
         for (Entity e : neighbours) {
             if (e.getClass() == c) {
                 return true;
@@ -144,14 +167,14 @@ public class MobileNetwork implements Field<Entity, Location> {
     }
 
     @Override
-    public <T extends Entity> List<Entity> getAllNeighbours(Location location, Class<T> c) {
-        List<Entity> allNeighbours = new ArrayList<>();
+    public <T extends Entity> List<T> getAllNeighbours(Location location, Class<T> c) {
+        List<T> allNeighbours = new ArrayList<>();
         Collection<Location> interim = gg.getNeighbors(location);
         if (interim != null) {
             List<Location> n = new ArrayList<>(interim);
             for (Location l : n) {
                 if (l.occupied() && l.getOccupant().getClass() == c) {
-                    allNeighbours.add(l.getOccupant());
+                    allNeighbours.add((T) l.getOccupant());
                 }
             }
         }
@@ -163,11 +186,11 @@ public class MobileNetwork implements Field<Entity, Location> {
         return 0;
     }
 
-    @Override
-    public boolean pathObstructed(Entity entity) {
-        Location l = entity.getLocation();
-        return getAllFreeAdjacentLocations(l).isEmpty();
-    }
+//    @Override
+//    public boolean pathObstructed(Entity entity) {
+//        Location l = entity.getLocation();
+//        return getAllFreeAdjacentLocations(l).isEmpty();
+//    }
 
     @Override
     public List<Entity> getAllEntities() {
@@ -181,24 +204,22 @@ public class MobileNetwork implements Field<Entity, Location> {
         return entities;
     }
 
-    public void createSmallWorld(int lattice, double clustering) {
+    public void createSmallWorld() {
+        int lattice = SimData.WIDTH;
+        double clustering = 0.5;
         KleinbergSmallWorldGenerator<Location, Edge> gen = new KleinbergSmallWorldGenerator<>(
                 new GraphFactory(), nodeSupplier, edgeSupplier, lattice, clustering
         );
         gg = (ModifiableSparseGraph<Location, Edge>) gen.get();
     }
 
-    public void createFreeScaleWorld(int vertices, int edges) {
+    public void createFreeScaleWorld(int numEdges) {
         BarabasiAlbertGenerator<Location, Edge> gen = new BarabasiAlbertGenerator<>(
-                new GraphFactory(), nodeSupplier, edgeSupplier, vertices, edges, SimData.SEED, new HashSet<>()
+                new GraphFactory(), nodeSupplier, edgeSupplier, 3, numEdges, SimData.SEED, new HashSet<>()
         );
-        gen.evolveGraph(vertices);
+        gen.evolveGraph(SimData.WIDTH + SimData.DEPTH);
         gg = (ModifiableSparseGraph<Location, Edge>) gen.get();
     }
-
-//    private boolean replace(Location o, Location n) {
-//        return gg.interchangeVertex(o, n);
-//    }
 
     static class NodePainter implements Function<Location, Paint> {
         @Override
@@ -241,7 +262,7 @@ public class MobileNetwork implements Field<Entity, Location> {
         public Location get() {
             Location loc = new Location(row++, col++);
             Entity e = gen.generate(loc);
-            loc.addOccupant(e);
+            loc.setOccupant(e);
             return loc;
         }
     }

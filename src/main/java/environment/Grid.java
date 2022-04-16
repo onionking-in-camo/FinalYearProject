@@ -17,6 +17,7 @@ public class Grid implements Field<Entity, Location> {
     private int depth;
     private int width;
     private Entity[][] matrix;
+    private Set<Location> quZone;
 
     /**
      * Create field grid where depth = number of rows,
@@ -28,6 +29,7 @@ public class Grid implements Field<Entity, Location> {
         this.depth = depth;
         this.width = width;
         matrix = new Entity[depth][width];
+        quZone = new HashSet<>();
     }
 
     /**
@@ -108,6 +110,16 @@ public class Grid implements Field<Entity, Location> {
     @Override
     public Entity getObjectAt(Location location) {
         return getObjectAt(location.getRow(), location.getCol());
+    }
+
+    @Override
+    public List<Location> getAllAdjacentLocations(Location location) {
+        List<Location> allLocs = new ArrayList<>();
+        for (Iterator<Location> it = adjacentLocations(location); it.hasNext(); ) {
+            Location loc = it.next();
+            allLocs.add(loc);
+        }
+        return allLocs;
     }
 
     /**
@@ -204,26 +216,17 @@ public class Grid implements Field<Entity, Location> {
      * @return a list of adjacent neighbours
      */
     @Override
-    public <T extends Entity> List<Entity> getAllNeighbours(Location location, Class<T> c) {
-        ArrayList<Entity> neighbours = new ArrayList<>();
+    public <T extends Entity> List<T> getAllNeighbours(Location location, Class<T> c) {
+        ArrayList<T> neighbours = new ArrayList<>();
         Iterator<Location> it = adjacentLocations(location, 1);
         while (it.hasNext()) {
             Location adjLoc = it.next();
             Entity e = getObjectAt(adjLoc);
             if (e != null && e.getClass() == c) {
-                neighbours.add(e);
+                neighbours.add((T) e);
             }
         }
         return neighbours;
-    }
-
-    @Override
-    public boolean pathObstructed(Entity entity) {
-        if (entity instanceof Agent) {
-            Agent ag = (Agent) entity;
-            return pathObstructed(ag.getLocation(), ag.getDirection());
-        }
-        return false;
     }
 
     @Override
@@ -245,16 +248,6 @@ public class Grid implements Field<Entity, Location> {
 
     public int getWidth() {
         return width;
-    }
-
-    public Grid cloneField() {
-        Grid clone = new Grid(getDepth(), getWidth());
-        for (int row = 0; row < getDepth(); row++) {
-            for (int col = 0; col < getWidth(); col++) {
-                clone.matrix[row][col] = matrix[row][col];
-            }
-        }
-        return clone;
     }
 
     /**
@@ -309,8 +302,32 @@ public class Grid implements Field<Entity, Location> {
         return adjacentLocations(location, 1);
     }
 
-    private boolean pathObstructed(Location l, Direction d) {
-        Location path = Location.getLocationInDirection(l, d);
-        return getObjectAt(path) != null;
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        for (int col = 0; col < matrix.length; col++) {
+            for (int row = 0; row < matrix[0].length; row++) {
+                sb.append(matrix[row][col] != null ? " A " : " X ");
+            }
+            sb.append("]");
+            sb.append("\n");
+            if (col != matrix.length - 1) sb.append("[");
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public void registerZone(Set<Location> zoneLocations) {
+        quZone.addAll(zoneLocations);
+    }
+
+    @Override
+    public void deregisterZone(Set<Location> zoneLocations) {
+        quZone.removeAll(zoneLocations);
+    }
+
+    @Override
+    public Set<Location> getZone() {
+        return quZone;
     }
 }

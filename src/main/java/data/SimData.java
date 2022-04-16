@@ -21,10 +21,10 @@ public class SimData {
     }
 
     // default dimensions for the simulation model
-    public static int DEPTH = 100;
-    public static int WIDTH = 100;
+    public static int DEPTH = 40;
+    public static int WIDTH = 40;
     // default seed for the simulation model
-    public static int SEED = 9;
+    public static int SEED = 999;
     // default run speed
     public static int RUN_DELAY = 100;
     // default runtime
@@ -52,4 +52,7 @@ public class SimData {
     public static int INFECTIOUS_PERIOD_MAX = 42;
     // default field type
     public static Class<?> FIELD_TYPE = Grid.class;
+    //
+    public static String DATA_FILE_DIR = "./src/main/resources/";
+    public static String DATA_FILE_PATH = "simulation_record_default";
 }

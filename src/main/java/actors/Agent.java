@@ -1,9 +1,7 @@
 package actors;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
+
 import data.SimData;
 import environment.Field;
 import environment.Grid;
@@ -16,13 +14,13 @@ import models.Susceptible;
 public class Agent extends Entity {
 
     private SIR status;
-    private int durationOfIllness;
-    private Direction direction;
+    private int health;
     private List<Action> actions;
     private Set<Percept> percepts;
     private boolean distancing = false;
     private boolean masked = false;
     private boolean symptomatic = false;
+    private boolean quarantining = false;
 
     public Agent(Location location) {
         super(location);
@@ -32,16 +30,16 @@ public class Agent extends Entity {
         // add actions to agent in order of priority
         actions = new ArrayList<>();
         actions.add(0, new Quarantine());
-        actions.add(1, new MoveDistanced());
-//        actions.add(2, new Turn());
-//        actions.add(3, new MoveForward());
-        actions.add(2, new MoveRandom());
+        actions.add(1, new MoveDQ());
+        actions.add(2, new MoveQuarantined());
+        actions.add(3, new MoveDistanced());
+        actions.add(4, new MoveRandom());
 
         // randomly generate a number that reflects the duration that the agent will be sick, if infected
-        durationOfIllness = SimData.getRandom().nextInt(
+        health = SimData.getRandom().nextInt(
                 SimData.INFECTIOUS_PERIOD_MAX - SimData.INFECTIOUS_PERIOD_MIN) + SimData.INFECTIOUS_PERIOD_MIN;
         // set the direction in which the agent will initially move
-        direction = Direction.getRandomDirection();
+//        direction = Direction.getRandomDirection();
     }
 
     /**
@@ -59,6 +57,10 @@ public class Agent extends Entity {
                 break;
         }
     }
+
+    public int getHealth() { return health; }
+
+    public void setHealth(int health) { this.health = health; }
 
     public SIR getStatus() {
         return status;
@@ -84,17 +86,27 @@ public class Agent extends Entity {
         symptomatic = b;
     }
 
-    public Direction getDirection() {
-        return direction;
-    }
-
-    /*
+    /** Beginning of actions
      * Defines the actions that an Agent is capable of
      * making.
      *
      */
     interface Action {
         boolean act(Field<Entity, Location> f);
+        default List<Location> orderBestLocations(Field<Entity, Location> f, Location origin) {
+            List<Location> freeLocs = f.getAllFreeAdjacentLocations(origin);
+            Collections.sort(freeLocs, Comparator.comparingInt(elem -> f.getAllNeighbours(elem, Agent.class).size()));
+            return freeLocs;
+        };
+        default Location findNonQuarantineLocation(Field<Entity, Location> f, List<Location> moves) {
+            Set<Location> quLocations = f.getZone();
+            for (Location loc : moves) {
+                if (!quLocations.contains(loc)) {
+                    return loc;
+                }
+            }
+            return null;
+        }
     }
 
     private class MoveRandom implements Action {
@@ -112,18 +124,58 @@ public class Agent extends Entity {
     private class Quarantine implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            return symptomatic && getStatus().getClass() == Infected.class;
+            if (symptomatic && getStatus().getClass() == Infected.class) {
+                if (!quarantining) {
+                    quarantining = true;
+                    f.registerZone(new HashSet<>(f.getAllAdjacentLocations(getLocation())));
+                }
+                return true;
+            }
+            else {
+                if (quarantining) {
+                    quarantining = false;
+                    f.deregisterZone(new HashSet<>(f.getAllAdjacentLocations(getLocation())));
+                }
+                return false;
+            }
         }
     }
 
-    private class Turn implements Action {
+    private class MoveDQ implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            if (percepts.contains(Percept.OBSTACLE_IN_FRONT)) {
-                if (SimData.getRandom().nextDouble() < 0.5)
-                    direction = direction.turnRight(direction);
-                else
-                    direction = direction.turnLeft(direction);
+            if (SimData.QUARANTINING && distancing) {
+                List<Location> freeLocs = orderBestLocations(f, getLocation());
+                if (!freeLocs.isEmpty()) {
+                    Location choice = findNonQuarantineLocation(f, freeLocs);
+                    if (choice != null) {
+                        move(f, choice);
+                        return true;
+                    }
+                    move(f, freeLocs.get(0));
+                    return true;
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private class MoveQuarantined implements Action {
+        @Override
+        public boolean act(Field<Entity, Location> f) {
+            if (SimData.QUARANTINING) {
+                List<Location> freeLocs = f.getAllFreeAdjacentLocations(getLocation());
+                if (!freeLocs.isEmpty()) {
+                    Collections.shuffle(freeLocs);
+                    Location move = findNonQuarantineLocation(f, freeLocs);
+                    if (move != null) {
+                        move(f, move);
+                        return true;
+                    }
+                    move(f, freeLocs.get(0));
+                    return true;
+                }
                 return true;
             }
             return false;
@@ -134,39 +186,16 @@ public class Agent extends Entity {
         @Override
         public boolean act(Field<Entity, Location> f) {
             if (distancing) {
-                List<Location> freeLocations = f.getAllFreeAdjacentLocations(getLocation());
-                if (!freeLocations.isEmpty()) {
-                    Location best = null;
-                    int fewestNeighbours = Integer.MAX_VALUE;
-                    for (Location l : freeLocations) {
-                        int x = f.getAllNeighbours(l, Agent.class).size();
-                        if (x < fewestNeighbours) {
-                            best = l;
-                            fewestNeighbours = x;
-                        }
-                    }
-                    direction = Direction.getDirectionOfLocation(getLocation(), best);
-                    move(f, best);
+                List<Location> freeLocs = orderBestLocations(f, getLocation());
+                if (!freeLocs.isEmpty()) {
+                    move(f, freeLocs.get(0));
                 }
                 return true;
             }
             return false;
         }
     }
-
-    private class MoveForward implements Action {
-        @Override
-        public boolean act(Field<Entity, Location> f) {
-            if (!percepts.contains(Percept.OBSTACLE_IN_FRONT)) {
-                Location to = Location.getLocationInDirection(getLocation(), direction);
-                move(f, to);
-                return true;
-            }
-            return false;
-        }
-    }
-    /*
-     * End of actions.
+    /** End of actions
      */
 
     /**
@@ -187,14 +216,15 @@ public class Agent extends Entity {
      */
     private void see(Field<Entity, Location> f) {
         // look for obstacles
-        if (f.pathObstructed(this)) percepts.add(Percept.OBSTACLE_IN_FRONT);
-        else percepts.remove(Percept.OBSTACLE_IN_FRONT);
+//        if (f.pathObstructed(this)) percepts.add(Percept.OBSTACLE_IN_FRONT);
+//        else percepts.remove(Percept.OBSTACLE_IN_FRONT);
+
     }
 
-    public void processDisease() {
+    private void processDisease() {
         if (status instanceof Infected) {
-            if (durationOfIllness == 0) status = status.nextState();
-            else durationOfIllness--;
+            if (health == 0) status = status.nextState();
+            else health--;
         }
     }
 }

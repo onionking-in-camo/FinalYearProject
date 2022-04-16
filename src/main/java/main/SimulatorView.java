@@ -10,7 +10,9 @@ import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
 import edu.uci.ics.jung.visualization.VisualizationImageServer;
 import environment.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * A graphical view of the simulation grid.
@@ -193,6 +195,7 @@ public class SimulatorView extends JFrame {
 
         @Override
         public void update(Field f) {
+            Set<Location> qu = f.getZone();
             for (int row = 0; row < f.getDimensions(); row++) {
                 for (int col = 0; col < f.getDimensions(); col++) {
                     Object actor = f.getObjectAt(new Location(row, col));
@@ -202,8 +205,13 @@ public class SimulatorView extends JFrame {
                             Agent ag = (Agent) actor;
                             this.drawMark(col, row, colors.get(ag.getStatus().getClass()));
                         }
-                    } else
-                        this.drawMark(col, row, GUIData.EMP_COL);
+                    }
+                    else {
+                        if (qu.contains(new Location(row, col))) {
+                            this.drawMark(col, row, GUIData.QU_COL);
+                        }
+                        else this.drawMark(col, row, GUIData.EMP_COL);
+                    }
                 }
             }
             repaint();

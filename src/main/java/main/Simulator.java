@@ -2,10 +2,10 @@ package main;
 import java.util.*;
 
 import actors.Agent;
-import actors.Entity;
 import data.GUIData;
 import data.SimData;
 import data.SimulationRecord;
+import disease.DiseaseSpreadCalculator;
 import environment.*;
 import io.CSVWriter;
 import models.Infected;
@@ -30,7 +30,8 @@ public class Simulator {
     private FieldStats stats;
     private SimulationRecord record;
     private PropertyChangeSupport supp;
-    private boolean setup, finished;
+    private boolean setup;
+    private boolean finished;
 
     public Simulator() {
         this(SimData.WIDTH, SimData.DEPTH);
@@ -78,15 +79,6 @@ public class Simulator {
         reset();
     }
 
-    private void setField(int d, int w) {
-        if (SimData.FIELD_TYPE == Grid.class) {
-            field = new Grid(d, w);
-        }
-        else if (SimData.FIELD_TYPE == MobileNetwork.class) {
-            field = new MobileNetwork();
-        }
-    }
-
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         supp.addPropertyChangeListener(listener);
     }
@@ -95,11 +87,7 @@ public class Simulator {
         supp.removePropertyChangeListener(listener);
     }
 
-    public SimulationRecord getRecord() {
-        return record;
-    }
-
-    public boolean hasFinished() {
+    public boolean finished() {
         return setup && finished;
     }
 
@@ -150,50 +138,10 @@ public class Simulator {
         this.view.setVisible(false);
     }
 
-    private List<Agent> getInfectedContacts() {
-        List<Agent> contacts = new ArrayList<>();
-        for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
-            Agent ag = it.next();
-            if (ag.getStatus().getClass() == Susceptible.class && nearInfected(field, ag)) {
-                contacts.add(ag);
-            }
-        }
-        return contacts;
-    }
-
-    private List<Agent> getNewlyInfected(List<Agent> contacts) {
-        List<Agent> newlyInfected = new ArrayList<>();
-
-        for (Agent ag : contacts) {
-            List<Agent> neighbours = field.getAllNeighbours(ag.getLocation(), Agent.class);
-            List<Agent> infectedNeighbours = neighbours
-                    .stream()
-                    .filter(this::isInfected)
-                    .toList();
-
-            double uninfectedProb = 1.0; // the chance that the agent will remain uninfected
-
-            // for every infected neighbour, we calculate the decrease in probability
-            // that the susceptible agent will remain uninfected
-            for (Agent infectedAg : infectedNeighbours) {
-                double infRate = SimData.INFECTIVITY;
-                if (infectedAg.getMasked()) { infRate *= SimData.MASK_WEARING_REDUCTION; }
-                uninfectedProb *= (1.0 - infRate);
-            }
-
-            // the chance the susceptible agent becomes infected is the
-            // inverse of the chance that the agent remains uninfected
-            double infectedProb = 1.0 - uninfectedProb;
-            if (SimData.getRandom().nextDouble() < infectedProb)
-                newlyInfected.add(ag);
-        }
-        return newlyInfected;
-    }
-
     private void simulateStep() {
 
-        List<Agent> contacts = getInfectedContacts();
-        List<Agent> agentsToInfect = getNewlyInfected(contacts);
+        List<Agent> contacts = DiseaseSpreadCalculator.getInfectedContacts(this.agents, this.field);
+        List<Agent> agentsToInfect = DiseaseSpreadCalculator.getNewlyInfected(contacts, this.field);
 
         // have all agents act
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
@@ -213,27 +161,18 @@ public class Simulator {
         try { Thread.sleep(SimData.RUN_DELAY);	} catch (Exception e) { /* TODO: handle exception */ }
     }
 
-    private boolean isInfected(Object e) {
-        if (e instanceof Agent) {
-            Agent ag = (Agent) e;
-            return ag.getStatus().getClass() == Infected.class;
-        }
-        return false;
-    }
-
-    private boolean nearInfected(Field f, Agent ag) {
-        List<Entity> neighbours = f.getAllNeighbours(ag.getLocation(), Agent.class);
-        for (Iterator<Entity> it = neighbours.iterator(); it.hasNext();) {
-            if (isInfected(it.next())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void populate() {
         field.initialise();
         agents = field.getAllEntities().stream().filter((ag) -> ag instanceof Agent).toList();
+    }
+
+    private void setField(int d, int w) {
+        if (SimData.FIELD_TYPE == Grid.class) {
+            field = new Grid(d, w);
+        }
+        else if (SimData.FIELD_TYPE == MobileNetwork.class) {
+            field = new MobileNetwork();
+        }
     }
 
     private void updateRecord() {

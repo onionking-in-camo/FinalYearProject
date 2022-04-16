@@ -28,10 +28,12 @@ public class LabelledTextArea extends JComponent {
         this.text.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 0),new EtchedBorder()));
     }
 
-    public double getValue() {
-        return Double.parseDouble(text.getText().trim());
+//    public double getValue() {
+//        return Double.parseDouble(text.getText().trim());
+//    }
+    public String getValue() {
+        return text.getText().trim();
     }
-
     public void setValue(String str) {
         text.setText(str);
     }

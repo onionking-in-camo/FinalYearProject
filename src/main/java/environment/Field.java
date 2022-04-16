@@ -12,17 +12,17 @@ import java.util.List;
  * @param <L> the location / relation of Objects
  *           to each other
  */
-public interface Field<E, L> {
+public interface Field<E, L> extends Zone {
     void initialise();
     void clearAll();
     void place(L l, E e);
     void clearLocation(L l);
     E getObjectAt(L l);
+    List<L> getAllAdjacentLocations(L l);
     List<L> getAllFreeAdjacentLocations(L l);
     L freeAdjacentLocation(L l);
     <T extends E> boolean isNeighbourTo(L l, Class<T> c);
-    <T extends E> List<E> getAllNeighbours(L l, Class<T> c);
+    <T extends E> List<T> getAllNeighbours(L l, Class<T> c);
     int getDimensions();
-    boolean pathObstructed(E e);
     List<E> getAllEntities();
 }

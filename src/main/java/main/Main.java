@@ -29,6 +29,7 @@ public class Main {
     private LabelledCheckBox socialDistancing;
     private LabelledCheckBox maskMandate;
     private LabelledCheckBox quarantining;
+    private LabelledTextArea saveFilePath;
 
     private JButton setUpButton;
     private JButton stepOnceButton;
@@ -51,6 +52,8 @@ public class Main {
     // agent params
     private String agentProb = String.valueOf(SimData.AGENT_PROB);
     private String agentZeroProb = String.valueOf(SimData.AGENT_ZERO_PROB);
+    //
+    private String defaultOutputPath = String.valueOf(SimData.DATA_FILE_PATH);
 
     private ButtonGroup fieldGroup;
 
@@ -85,14 +88,17 @@ public class Main {
         maskWearingReduction = new LabelledTextArea("Mask Risk Reduction: ", defaultMaskReduction);
 
         // compliance params
-        quarantineCompliance = new LabelledTextArea("Quarantine Compliance: ", this.defQuarantineCompliance);
-        socialDistancingCompliance = new LabelledTextArea("Distancing Compliance: ", this.defSocialDistancingCompliance);
-        maskWearingCompliance = new LabelledTextArea("Mask Compliance: ", this.defMaskWearingCompliance);
+        quarantineCompliance = new LabelledTextArea("Quarantine Compliance: ", defQuarantineCompliance);
+        socialDistancingCompliance = new LabelledTextArea("Distancing Compliance: ", defSocialDistancingCompliance);
+        maskWearingCompliance = new LabelledTextArea("Mask Compliance: ", defMaskWearingCompliance);
 
         // policy options
         socialDistancing = new LabelledCheckBox("Social Distancing: ", false);
         maskMandate = new LabelledCheckBox("Mask Mandate: ", false);
         quarantining = new LabelledCheckBox("Quarantining: ", false);
+
+        // data output path
+        saveFilePath = new LabelledTextArea("File name: ", defaultOutputPath);
 
         // field options
         JRadioButton gridBox = new JRadioButton();
@@ -151,6 +157,7 @@ public class Main {
         JPanel diseaseBox = new JPanel();
         JPanel complianceBox = new JPanel();
         JPanel fieldBox = new JPanel();
+        JPanel filePathBox = new JPanel();
 
         // add borders
         topBox.setBorder(BorderFactory.createEtchedBorder());
@@ -166,6 +173,7 @@ public class Main {
         diseaseBox.setBorder(new TitledBorder("Disease"));
         complianceBox.setBorder(new TitledBorder("Compliance"));
         commandBox.setBorder(new TitledBorder("Commands"));
+        filePathBox.setBorder(new TitledBorder("Output Path"));
 
         // set layout
         mainFrame.getContentPane().setLayout(new BorderLayout());
@@ -174,7 +182,7 @@ public class Main {
         middleBox.setLayout((new GridLayout(2, 1)));
         topMiddleBox.setLayout(new BorderLayout());
         lowMiddleBox.setLayout(new BorderLayout());
-        lowerBox.setLayout(new GridLayout(1, 1));
+        lowerBox.setLayout(new GridLayout(2, 1));
 
         paramBox.setLayout(new GridLayout(2, 2));
         fieldBox.setLayout(new GridLayout(1,1));
@@ -185,6 +193,7 @@ public class Main {
         diseaseBox.setLayout(new GridLayout(3,1));
         complianceBox.setLayout(new GridLayout(3,1));
 
+        filePathBox.setLayout(new GridLayout(1, 1));
         commandBox.setLayout(new GridLayout(3,1));
 
         /*
@@ -249,6 +258,9 @@ public class Main {
         /*
          * Start of lowerBox
          */
+
+        filePathBox.add(saveFilePath);
+
         commandBox.add(setUpButton);
         commandBox.add(resetButton);
         commandBox.add(stepOnceButton);
@@ -256,6 +268,7 @@ public class Main {
         commandBox.add(runIterationsButton);
         commandBox.add(quitButton);
 
+        lowerBox.add(filePathBox, BorderLayout.NORTH);
         lowerBox.add(commandBox, BorderLayout.CENTER);
         /*
          * End of lowerBox
@@ -281,7 +294,7 @@ public class Main {
 
         stepOnceButton.addActionListener((e) -> {
             new Thread(() -> {
-                if (s.hasFinished()) {
+                if (s.finished()) {
                     save();
                     return;
                 }
@@ -339,12 +352,12 @@ public class Main {
 
     private void setUp() {
         try {
-            int runtime = (int) simLength.getValue();
-            int seed = (int) simSeed.getValue();
-            int width = (int) mapWidth.getValue();
-            int depth = (int) mapDepth.getValue();
-            double agProb = agentCreationProb.getValue();
-            double agZeroProb = agentZeroCreationProb.getValue();
+            int runtime = Integer.parseInt(simLength.getValue());
+            int seed = Integer.parseInt(simSeed.getValue());
+            int width = Integer.parseInt(mapWidth.getValue());
+            int depth = Integer.parseInt(mapDepth.getValue());
+            double agProb = Double.parseDouble(agentCreationProb.getValue());
+            double agZeroProb = Double.parseDouble(agentZeroCreationProb.getValue());
             boolean distancing = socialDistancing.getValue();
             boolean masks = maskMandate.getValue();
             boolean quarantine = quarantining.getValue();
@@ -359,6 +372,7 @@ public class Main {
             else {
                 fieldClass = MobileNetwork.class;
             }
+            String fileName = String.valueOf(saveFilePath.getValue());
 
             SimData.RUNTIME = runtime;
             SimData.SEED = seed;
@@ -370,6 +384,7 @@ public class Main {
             SimData.MASK_MANDATE = masks;
             SimData.QUARANTINING = quarantine;
             SimData.FIELD_TYPE = fieldClass;
+            SimData.DATA_FILE_PATH = fileName;
 
             try {
                 s = new Simulator();
@@ -404,12 +419,13 @@ public class Main {
     }
 
     private void save() {
-        String filePath = "./src/main/resources/simulation_record";
+//        String filePath = "./src/main/resources/simulation_record";
+        String filePath = SimData.DATA_FILE_DIR + SimData.DATA_FILE_PATH;
         s.saveData(filePath);
         s.saveImage(filePath);
     }
 
-    public void reset() {
+    private void reset() {
         if (this.s != null)
             s.closeView();
         setUpButton.setEnabled(true);
