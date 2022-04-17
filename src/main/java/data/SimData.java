@@ -1,8 +1,8 @@
 package data;
 
+import environment.FieldType;
 import environment.Grid;
 
-import java.awt.Color;
 import java.util.Random;
 
 public class SimData {
@@ -51,7 +51,8 @@ public class SimData {
     public static int INFECTIOUS_PERIOD_MIN = 14;
     public static int INFECTIOUS_PERIOD_MAX = 42;
     // default field type
-    public static Class<?> FIELD_TYPE = Grid.class;
+    public static Class<?> FIELD_CLASS = Grid.class;
+    public static FieldType FIELD_TYPE = FieldType.GRID;
     //
     public static String DATA_FILE_DIR = "./src/main/resources/";
     public static String DATA_FILE_PATH = "simulation_record_default";

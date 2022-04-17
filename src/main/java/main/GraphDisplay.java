@@ -13,7 +13,7 @@ import org.knowm.xchart.BitmapEncoder.BitmapFormat;
 import data.GUIData;
 import org.knowm.xchart.style.markers.Circle;
 
-public class GraphView extends JFrame implements PropertyChangeListener {
+public class GraphDisplay extends JFrame implements PropertyChangeListener {
 
     private static final long serialVersionUID = -1236441407025451806L;
     private int[][] initData;
@@ -27,7 +27,7 @@ public class GraphView extends JFrame implements PropertyChangeListener {
             .yAxisTitle("Number of person(s)")
             .build();
 
-    public GraphView(Simulator sim) {
+    public GraphDisplay(Simulator sim) {
         sim.addPropertyChangeListener(this);
         initData = new int[][] { {0}, {0} };
 
@@ -55,7 +55,7 @@ public class GraphView extends JFrame implements PropertyChangeListener {
         try {
             BitmapEncoder.saveBitmap(graph, imagePath, BitmapFormat.PNG);
         } catch (Exception e) {
-            System.out.println("GraphView::captureGraphImage failed. Unable to save image.");
+            System.out.println("GraphDisplay::captureGraphImage failed. Unable to save image.");
             System.out.println(e.getMessage());
         }
     }

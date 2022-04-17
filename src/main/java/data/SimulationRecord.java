@@ -13,7 +13,7 @@ public class SimulationRecord {
 
     public SimulationRecord() {
         headers = new ArrayList<>();
-        data = new ArrayList<String[]>();
+        data = new ArrayList<>();
     }
 
     public void addHeader(String[] header) {

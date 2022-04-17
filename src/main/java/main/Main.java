@@ -7,9 +7,14 @@ import javax.swing.border.*;
 
 import data.GUIData;
 import data.SimData;
+import environment.FieldType;
 import environment.Grid;
 import environment.MobileNetwork;
 import environment.StaticNetwork;
+import exceptions.IllegalParameterException;
+import models.Infected;
+import models.Recovered;
+import models.Susceptible;
 
 public class Main {
 
@@ -57,7 +62,7 @@ public class Main {
 
     private ButtonGroup fieldGroup;
 
-    private Simulator s;
+    private Simulator simulator;
 
     public static void main(String[] args) {
         new Main();
@@ -294,7 +299,7 @@ public class Main {
 
         stepOnceButton.addActionListener((e) -> {
             new Thread(() -> {
-                if (s.finished()) {
+                if (simulator.finished()) {
                     save();
                     return;
                 }
@@ -351,59 +356,34 @@ public class Main {
     }
 
     private void setUp() {
+
         try {
-            int runtime = Integer.parseInt(simLength.getValue());
-            int seed = Integer.parseInt(simSeed.getValue());
-            int width = Integer.parseInt(mapWidth.getValue());
-            int depth = Integer.parseInt(mapDepth.getValue());
-            double agProb = Double.parseDouble(agentCreationProb.getValue());
-            double agZeroProb = Double.parseDouble(agentZeroCreationProb.getValue());
-            boolean distancing = socialDistancing.getValue();
-            boolean masks = maskMandate.getValue();
-            boolean quarantine = quarantining.getValue();
-            String fieldType = fieldGroup.getSelection().getActionCommand();
-            Class fieldClass = null;
-            if (fieldType.equals("Grid")) {
-                fieldClass = Grid.class;
-            }
-            else if (fieldType.equals("Static")) {
-                fieldClass = StaticNetwork.class;
-            }
-            else {
-                fieldClass = MobileNetwork.class;
-            }
-            String fileName = String.valueOf(saveFilePath.getValue());
+            setParams();
+            simulator = new Simulator.SimulationBuilder()
+                    .setDepth(SimData.DEPTH)
+                    .setWidth(SimData.WIDTH)
+                    .setField(SimData.FIELD_TYPE)
+                    .setClassColour(Susceptible.class, GUIData.SUS_COL)
+                    .setClassColour(Infected.class, GUIData.INF_COL)
+                    .setClassColour(Recovered.class, GUIData.REC_COL)
+                    .build();
 
-            SimData.RUNTIME = runtime;
-            SimData.SEED = seed;
-            SimData.WIDTH = width;
-            SimData.DEPTH = depth;
-            SimData.AGENT_PROB = agProb;
-            SimData.AGENT_ZERO_PROB = agZeroProb;
-            SimData.SOCIAL_DISTANCING = distancing;
-            SimData.MASK_MANDATE = masks;
-            SimData.QUARANTINING = quarantine;
-            SimData.FIELD_TYPE = fieldClass;
-            SimData.DATA_FILE_PATH = fileName;
-
-            try {
-                s = new Simulator();
-            } catch (Exception e) {
-                System.out.println("Simulator instantiation failed.");
-                e.printStackTrace();
-            }
-
-            setUpButton.setEnabled(false);
-            stepOnceButton.setEnabled(true);
-            runLongButton.setEnabled(true);
-            runIterationsButton.setEnabled(true);
-            resetButton.setEnabled(true);
-        }
-        catch (Exception e) {
+        } catch (IllegalParameterException e) {
+            JOptionPane.showMessageDialog(mainFrame,
+                    "Parameter setup failed." +
+                            e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(mainFrame,
                     "Problem creating simulation." +
                             e.getMessage());
         }
+
+        setUpButton.setEnabled(false);
+        stepOnceButton.setEnabled(true);
+        runLongButton.setEnabled(true);
+        runIterationsButton.setEnabled(true);
+        resetButton.setEnabled(true);
     }
 
     private void runOnce() {
@@ -411,27 +391,53 @@ public class Main {
     }
 
     private void runIterations(int iterations) {
-        s.simulate(iterations);
+        simulator.simulate(iterations);
     }
 
     private void run() {
-        s.simulate();
+        simulator.simulate();
     }
 
     private void save() {
-//        String filePath = "./src/main/resources/simulation_record";
         String filePath = SimData.DATA_FILE_DIR + SimData.DATA_FILE_PATH;
-        s.saveData(filePath);
-        s.saveImage(filePath);
+        simulator.saveData(filePath);
+        simulator.saveImage(filePath);
     }
 
     private void reset() {
-        if (this.s != null)
-            s.closeView();
+        if (this.simulator != null)
+            simulator.closeView();
         setUpButton.setEnabled(true);
         stepOnceButton.setEnabled(false);
         runLongButton.setEnabled(false);
         runLongButton.setText("Run");
         runLongButton.setToolTipText("Run simulation for the duration specified.");
+    }
+
+    private void setParams() throws IllegalParameterException {
+        SimData.RUNTIME = Integer.parseInt(simLength.getValue());
+        SimData.SEED = Integer.parseInt(simSeed.getValue());
+        SimData.WIDTH = Integer.parseInt(mapWidth.getValue());
+        SimData.DEPTH = Integer.parseInt(mapDepth.getValue());
+        SimData.AGENT_PROB = Double.parseDouble(agentCreationProb.getValue());
+        SimData.AGENT_ZERO_PROB = Double.parseDouble(agentZeroCreationProb.getValue());
+        SimData.SOCIAL_DISTANCING = socialDistancing.getValue();
+        SimData.MASK_MANDATE = maskMandate.getValue();
+        SimData.QUARANTINING = quarantining.getValue();
+        SimData.DATA_FILE_PATH = String.valueOf(saveFilePath.getValue());
+        String fieldType = fieldGroup.getSelection().getActionCommand();
+        Class fieldClass;
+        if (fieldType.equals("Grid")) {
+            fieldClass = Grid.class;
+            SimData.FIELD_TYPE = FieldType.GRID;
+        }
+        else if (fieldType.equals("Static")) {
+            fieldClass = StaticNetwork.class;
+        }
+        else {
+            fieldClass = MobileNetwork.class;
+            SimData.FIELD_TYPE = FieldType.NETWORK;
+        }
+        SimData.FIELD_CLASS = fieldClass;
     }
 }

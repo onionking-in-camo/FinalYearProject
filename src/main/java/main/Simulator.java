@@ -1,8 +1,9 @@
 package main;
+import java.awt.*;
 import java.util.*;
 
 import actors.Agent;
-import data.GUIData;
+import actors.Entity;
 import data.SimData;
 import data.SimulationRecord;
 import disease.DiseaseSpreadCalculator;
@@ -14,6 +15,7 @@ import models.Susceptible;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.List;
 
 /**
  * @author Maria Chli
@@ -22,62 +24,81 @@ import java.beans.PropertyChangeSupport;
  */
 public class Simulator {
 
+    public static class SimulationBuilder {
+        private int width;
+        private int depth;
+        private Field<Entity, Location> field;
+        private SimulatorDisplay display;
+        private Map<Class<?>, Color> classColours = new HashMap<>();
+        private List<PropertyChangeListener> listeners = new ArrayList<>();
+
+        public SimulationBuilder setWidth(int w) {
+            width = w;
+            return this;
+        }
+
+        public SimulationBuilder setDepth(int d) {
+            depth = d;
+            return this;
+        }
+
+        public SimulationBuilder setField(FieldType type) {
+            if (type == FieldType.GRID)    { field = new Grid(depth, width); }
+            if (type == FieldType.NETWORK) { field = new MobileNetwork(); }
+            display = new SimulatorDisplay(field);
+            return this;
+        }
+
+        public SimulationBuilder setClassColour(Class<?> cl, Color co) {
+            classColours.put(cl, co);
+            return this;
+        }
+
+        public SimulationBuilder addListener(PropertyChangeListener l) {
+            listeners.add(l);
+            return this;
+        }
+
+        public Simulator build() {
+            Simulator sim = new Simulator();
+            sim.width = this.width;
+            sim.depth = this.depth;
+            sim.field = this.field;
+            sim.display = this.display;
+            classColours.forEach((k, v) -> {
+                sim.display.setColor(k, v);
+            });
+            listeners.forEach(listener -> {
+                sim.addPropertyChangeListener(listener);
+            });
+            sim.step = 0;
+            sim.setup = false;
+            sim.finished = false;
+            sim.agents = new ArrayList<>();
+            sim.stats = new FieldStats();
+            sim.record = new SimulationRecord();
+            sim.record.addHeader(new String[] {"Seed", "Agent Probability", "Agent 0 Probability", "Infectiousness", "Social Distancing", "Mask Mandate", "Quarantining", "Field type"});
+            sim.record.addHeader(new String[] {String.valueOf(SimData.SEED), String.valueOf(SimData.AGENT_PROB), String.valueOf(SimData.AGENT_ZERO_PROB), String.valueOf(SimData.INFECTIVITY), String.valueOf(SimData.SOCIAL_DISTANCING), String.valueOf(SimData.MASK_MANDATE), String.valueOf(SimData.QUARANTINING), field.getClass().getSimpleName()});
+            sim.record.addHeader(new String[] {"Susceptible", "Infected", "Recovered"});
+            sim.supp = new PropertyChangeSupport(sim);
+            sim.graph = new GraphDisplay(sim);
+            sim.reset();
+            return sim;
+        }
+    }
+
+    private int width;
+    private int depth;
+    private Field<Entity, Location> field;
+    private SimulatorDisplay display;
     private int step;
-    private Field field;
-    private GraphView graph;
-    private SimulatorView view;
+    private boolean setup;
+    private boolean finished;
     private List<Agent> agents;
     private FieldStats stats;
     private SimulationRecord record;
     private PropertyChangeSupport supp;
-    private boolean setup;
-    private boolean finished;
-
-    public Simulator() {
-        this(SimData.WIDTH, SimData.DEPTH);
-    }
-
-    /**
-     * Create a simulation field with the given size.
-     * @param depth Depth of the field. Must be greater than zero.
-     * @param width Width of the field. Must be greater than zero.
-     */
-    public Simulator(int depth, int width) {
-        setField(depth, width);
-        view = new SimulatorView(depth, width, field);
-        view.setColor(Susceptible.class, GUIData.SUS_COL);
-        view.setColor(Infected.class, GUIData.INF_COL);
-        view.setColor(Recovered.class, GUIData.REC_COL);
-        stats = new FieldStats();
-        record = new SimulationRecord();
-        record.addHeader(new String[] {
-                "Seed",
-                "Ag Prob.",
-                "Ag0 Prob.",
-                "Infectiousness",
-                "Social Distancing",
-                "Mask Mandate",
-                "Quarantining",
-                "Field type"
-        });
-        record.addHeader(new String[] {
-                String.valueOf(SimData.SEED),
-                String.valueOf(SimData.AGENT_PROB),
-                String.valueOf(SimData.AGENT_ZERO_PROB),
-                String.valueOf(SimData.INFECTIVITY),
-                String.valueOf(SimData.SOCIAL_DISTANCING),
-                String.valueOf(SimData.MASK_MANDATE),
-                String.valueOf(SimData.QUARANTINING),
-                field.getClass().getSimpleName()
-        });
-        record.addHeader(new String[] {"Susceptible", "Infected", "Recovered"});
-        agents = new ArrayList<>();
-        supp = new PropertyChangeSupport(this);
-        graph = new GraphView(this);
-        setup = false;
-        finished = false;
-        reset();
-    }
+    private GraphDisplay graph;
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         supp.addPropertyChangeListener(listener);
@@ -97,24 +118,19 @@ public class Simulator {
         finished = false;
         populate();
         updateRecord();
-        view.showStatus(step, field);
+        display.showStatus(step, field);
     }
 
     public void simulate() {
-        while (view.isViable()) {
+        while (display.isViable()) {
             simulateStep();
             updateRecord();
         }
         finished = true;
     }
 
-    /**
-     * Run the simulation from its current state for the given number of steps.
-     * Stop before the given number of steps if it ceases to be viable.
-     * @param steps The number of steps to run for.
-     */
     public void simulate(int steps) {
-        for (int step = 1; step <= steps && view.isViable(); step++) {
+        for (int step = 1; step <= steps && display.isViable(); step++) {
             simulateStep();
             updateRecord();
         }
@@ -135,7 +151,8 @@ public class Simulator {
     }
 
     public void closeView() {
-        this.view.setVisible(false);
+        this.display.setVisible(false);
+        this.graph.setVisible(false);
     }
 
     private void simulateStep() {
@@ -155,7 +172,7 @@ public class Simulator {
         }
 
         step++;
-        view.showStatus(step, field);
+        display.showStatus(step, field);
 
         // slow down the simulation
         try { Thread.sleep(SimData.RUN_DELAY);	} catch (Exception e) { /* TODO: handle exception */ }
@@ -163,16 +180,7 @@ public class Simulator {
 
     private void populate() {
         field.initialise();
-        agents = field.getAllEntities().stream().filter((ag) -> ag instanceof Agent).toList();
-    }
-
-    private void setField(int d, int w) {
-        if (SimData.FIELD_TYPE == Grid.class) {
-            field = new Grid(d, w);
-        }
-        else if (SimData.FIELD_TYPE == MobileNetwork.class) {
-            field = new MobileNetwork();
-        }
+        agents = field.getAllOf(Agent.class);
     }
 
     private void updateRecord() {

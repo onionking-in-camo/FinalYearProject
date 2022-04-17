@@ -5,12 +5,12 @@ import java.awt.event.*;
 import javax.swing.*;
 
 import actors.Agent;
+import actors.Entity;
 import data.GUIData;
 import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
 import edu.uci.ics.jung.visualization.VisualizationImageServer;
 import environment.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -34,39 +34,39 @@ import java.util.Set;
  * @author James J. Kerr
  * @version 07-12-2021
  */
-public class SimulatorView extends JFrame {
+public class SimulatorDisplay extends JFrame {
 
     private final String STEP_PREFIX = "Step: ";
     private final String TOTAL_AG_PREFIX = "Population(s): ";
-    private JLabel stepLabel, population;
-    private AbstractView view;
-
-    // A map for storing colors for participants in the simulation
-    private HashMap<Class<?>, Color> colors;
-    // A statistics object computing and storing simulation information
+    private JLabel step;
+    private JLabel population;
+    private FieldDisplay fieldDisplay;
     private FieldStats stats;
+    private HashMap<Class<?>, Color> colors;
 
-    public SimulatorView(int height, int width, Field f) {
+    public SimulatorDisplay(Field f) {
         stats = new FieldStats();
         colors = new HashMap<Class<?>, Color>();
 
         setTitle("MAS Disease Spread");
-        stepLabel = new JLabel(STEP_PREFIX, JLabel.CENTER);
+        step = new JLabel(STEP_PREFIX, JLabel.CENTER);
         population = new JLabel(TOTAL_AG_PREFIX, JLabel.LEFT);
 
         setLocation(GUIData.SIM_X, GUIData.SIM_Y);
 
-        if (f instanceof Grid) {
-            view = new FieldView(height, width);
-        }
+        fieldDisplay = getFieldDisplay(f);
 
-        if (f instanceof MobileNetwork) {
-            view = new NetworkView((MobileNetwork) f, height, width);
-        }
+//        if (f instanceof Grid) {
+//            fieldDisplay = new GridDisplay(height, width);
+//        }
+//
+//        if (f instanceof MobileNetwork) {
+//            fieldDisplay = new NetworkDisplay((MobileNetwork) f, height, width);
+//        }
 
         Container contents = getContentPane();
-        contents.add(stepLabel, BorderLayout.NORTH);
-        contents.add(view, BorderLayout.CENTER);
+        contents.add(step, BorderLayout.NORTH);
+        contents.add(fieldDisplay, BorderLayout.CENTER);
         contents.add(population, BorderLayout.SOUTH);
 
         // Make sure that closing the window ends the application
@@ -83,6 +83,16 @@ public class SimulatorView extends JFrame {
         setVisible(true);
     }
 
+    private FieldDisplay getFieldDisplay(Field field) {
+        if (field instanceof Grid) {
+            return new GridDisplay(field);
+        }
+        if (field instanceof MobileNetwork) {
+            return new NetworkDisplay(field);
+        }
+        return null;
+    }
+
     private void exitApp() {
         System.exit(0);
     }
@@ -95,31 +105,28 @@ public class SimulatorView extends JFrame {
      * Show the current status of the field.
      * @param step Which iteration step it is.
      */
-     public void showStatus(int step, Field grid) {
-        if (!isVisible())
-            setVisible(true);
-
-        stepLabel.setText(STEP_PREFIX + step);
+     public void showStatus(int step, Field<Entity, Location> field) {
+        if (!isVisible()) { setVisible(true); }
+        this.step.setText(STEP_PREFIX + step);
         stats.reset();
-        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails2(grid));
+        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails2(field));
         stats.countFinished();
-        view.prepare();
-        view.update(grid);
-
+        fieldDisplay.prepare();
+        fieldDisplay.update();
     }
 
     public boolean isViable() {
         return stats.isViable();
     }
 
-    private abstract class AbstractView extends JPanel {
+    private abstract class FieldDisplay extends JPanel {
 
         protected int height;
         protected int width;
         protected Dimension size;
         protected final int SCALING_FACTOR = 6;
 
-        public AbstractView(int width, int height) {
+        public FieldDisplay(int width, int height) {
             this.height = height;
             this.width = width;
             size = new Dimension(0, 0);
@@ -134,17 +141,17 @@ public class SimulatorView extends JFrame {
         }
 
         public abstract void prepare();
-        public abstract void update(Field f);
+        public abstract void update();
     }
 
-    private class NetworkView extends AbstractView {
+    private class NetworkDisplay extends FieldDisplay {
 
         private VisualizationImageServer vs;
         private MobileNetwork f;
 
-        public NetworkView(MobileNetwork f, int height, int width) {
-            super(height, width);
-            this.f = f;
+        public NetworkDisplay(Field field) {
+            super(field.getDimensions(), field.getDimensions());
+            this.f = (MobileNetwork) field;
         }
 
         @Override
@@ -162,7 +169,7 @@ public class SimulatorView extends JFrame {
         }
 
         @Override
-        public void update(Field f) {
+        public void update() {
             vs.updateUI();
         }
     }
@@ -175,17 +182,20 @@ public class SimulatorView extends JFrame {
      * This is rather advanced GUI stuff - you can ignore this
      * for your project if you like.
      */
-    private class FieldView extends AbstractView {
+    private class GridDisplay extends FieldDisplay {
 
-        private int gridWidth, gridHeight;
+//        private int gridWidth, gridHeight;
         private int xScale, yScale;
         private Graphics g;
         private Image fieldImage;
+        private Grid grid;
 
-        public FieldView(int height, int width) {
-            super(height, width);
-            gridHeight = height;
-            gridWidth = width;
+        public GridDisplay(Field f) {
+            super(f.getDimensions(), f.getDimensions());
+//            gridHeight = height;
+//            gridWidth = width;
+//            this.height =
+            grid = (Grid) f;
         }
 
         @Override
@@ -194,11 +204,11 @@ public class SimulatorView extends JFrame {
         }
 
         @Override
-        public void update(Field f) {
-            Set<Location> qu = f.getZone();
-            for (int row = 0; row < f.getDimensions(); row++) {
-                for (int col = 0; col < f.getDimensions(); col++) {
-                    Object actor = f.getObjectAt(new Location(row, col));
+        public void update() {
+            Set<Location> qu = grid.getZone();
+            for (int row = 0; row < grid.getDimensions(); row++) {
+                for (int col = 0; col < grid.getDimensions(); col++) {
+                    Object actor = grid.getObjectAt(new Location(row, col));
                     if (actor != null) {
                         stats.incrementCount(actor);
                         if (actor instanceof Agent) {
@@ -226,10 +236,10 @@ public class SimulatorView extends JFrame {
                 size = getSize();
                 fieldImage = this.createImage(size.width, size.height);
                 g = fieldImage.getGraphics();
-                xScale = size.width / gridWidth;
+                xScale = size.width / width;
                 if (xScale < 1)
                     xScale = SCALING_FACTOR;
-                yScale = size.height / gridHeight;
+                yScale = size.height / height;
                 if (yScale < 1)
                     yScale = SCALING_FACTOR;
             }
