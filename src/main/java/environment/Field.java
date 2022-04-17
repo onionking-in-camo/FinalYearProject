@@ -3,6 +3,7 @@ package environment;
 import actors.Entity;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Field is the abstract representation of a data layer which
@@ -25,4 +26,12 @@ public interface Field<E, L> extends Zone {
     <T extends E> List<T> getAllNeighbours(L l, Class<T> c);
     int getDimensions();
     List<E> getAllEntities();
+    default <T extends E> List<T> getAllOf(Class<T> c) {
+        List<E> allEntities = getAllEntities();
+        return allEntities
+                .stream()
+                .filter(e -> e.getClass() == c)
+                .map(e -> {T x = (T) e; return x;})
+                .collect(Collectors.toList());
+    }
 }

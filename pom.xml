@@ -34,9 +34,21 @@
             <artifactId>jung-visualization</artifactId>
             <version>2.1.1</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.cucumber</groupId>-->
+<!--            <artifactId>cucumber-java8</artifactId>-->
+<!--            <version>7.2.3</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java8</artifactId>
+            <artifactId>cucumber-java</artifactId>
+            <version>7.2.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
             <version>7.2.3</version>
             <scope>test</scope>
         </dependency>
@@ -63,7 +75,7 @@
             <version>1.5.1</version>
         </dependency>
         <dependency>
-            <groupId>com.github.vlsi.mxgraph</groupId>
+            <groupId>com.GitHub.vlsi.mxgraph</groupId>
             <artifactId>jgraphx</artifactId>
             <version>4.2.2</version>
         </dependency>

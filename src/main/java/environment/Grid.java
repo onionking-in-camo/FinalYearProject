@@ -1,5 +1,6 @@
 package environment;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import actors.Agent;
 import actors.AgentGenerator;
@@ -307,7 +308,13 @@ public class Grid implements Field<Entity, Location> {
         StringBuilder sb = new StringBuilder("[");
         for (int col = 0; col < matrix.length; col++) {
             for (int row = 0; row < matrix[0].length; row++) {
-                sb.append(matrix[row][col] != null ? " A " : " X ");
+                if (matrix[row][col] != null) {
+                    if (matrix[row][col] instanceof Agent) {
+                        Agent ag = (Agent) matrix[row][col];
+                        sb.append(" " + ag.getStatus().toString() + " ");
+                    }
+                    else sb.append(" X ");
+                }
             }
             sb.append("]");
             sb.append("\n");

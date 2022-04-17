@@ -25,22 +25,25 @@ public class MobileNetwork implements Field<Entity, Location> {
     private Supplier<Location> nodeSupplier;
     private Supplier<Edge> edgeSupplier;
     private Function<Location, Paint> nodePainter;
+    private Set<Location> quZone;
 
-    public MobileNetwork() {}
+    public MobileNetwork() {
+        quZone = new HashSet<>();
+    }
 
     @Override
     public void registerZone(Set<Location> zoneLocations) {
-
+        quZone.addAll(zoneLocations);
     }
 
     @Override
     public void deregisterZone(Set<Location> zoneLocations) {
-
+        quZone.addAll(zoneLocations);
     }
 
     @Override
     public Set<Location> getZone() {
-        return null;
+        return quZone;
     }
 
     class GraphFactory implements Supplier<Graph<Location, Edge>> {
@@ -111,10 +114,11 @@ public class MobileNetwork implements Field<Entity, Location> {
 
     @Override
     public List<Location> getAllAdjacentLocations(Location location) {
+        if (gg.containsVertex(location)) {
+            return gg.getNeighbors(location).stream().toList();
+        }
         return null;
     }
-
-    ;
 
     /**
      * Returns a list of all nodes, connected to location l, which
@@ -185,12 +189,6 @@ public class MobileNetwork implements Field<Entity, Location> {
     public int getDimensions() {
         return 0;
     }
-
-//    @Override
-//    public boolean pathObstructed(Entity entity) {
-//        Location l = entity.getLocation();
-//        return getAllFreeAdjacentLocations(l).isEmpty();
-//    }
 
     @Override
     public List<Entity> getAllEntities() {

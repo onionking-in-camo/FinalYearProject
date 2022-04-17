@@ -45,7 +45,7 @@ public class DiseaseSpreadCalculator {
             // the chance the susceptible agent becomes infected is the
             // inverse of the chance that the agent remains uninfected
             double infectedProb = 1.0 - uninfectedProb;
-            if (SimData.getRandom().nextDouble() < infectedProb)
+            if (SimData.getRandom().nextDouble() <= infectedProb)
                 newlyInfected.add(ag);
         }
         return newlyInfected;

@@ -10,4 +10,9 @@ public class Recovered implements SIR {
     public SIR prevState() {
         return new Infected();
     }
+
+    @Override
+    public String toString() {
+        return "R";
+    }
 }
