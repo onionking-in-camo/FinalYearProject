@@ -99,7 +99,7 @@ public class GridTest {
     @Test
     void getAllNeighbours_shouldBe8_whenGridIsFull() {
         fillGrid();
-        assertEquals(9, g.getAllNeighbours(l, Agent.class).size());
+        assertEquals(8, g.getAllNeighbours(l, Agent.class).size());
     }
 
     @Test

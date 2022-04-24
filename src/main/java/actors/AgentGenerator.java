@@ -3,6 +3,8 @@ package actors;
 import data.SimData;
 import environment.Location;
 
+import java.util.Random;
+
 public class AgentGenerator extends EntityGenerator<Entity> {
 
     /**
@@ -15,35 +17,36 @@ public class AgentGenerator extends EntityGenerator<Entity> {
      */
     @Override
     protected Entity generateEntity(Location l) {
-        if (SimData.getRandom().nextDouble() < SimData.AGENT_ZERO_PROB) {
+        double value = SimData.getRandom().nextDouble();
+        if (value <= SimData.getAgentZeroProbability()) {
             Agent ag = new Agent(l);
             ag.setStatus(ag.getStatus().nextState());
             return ag;
         }
         //
-        if (SimData.getRandom().nextDouble() < SimData.AGENT_PROB) {
+        double offset = SimData.getAgentZeroProbability();
+        if (value <= SimData.getAgentProbability() + offset && value > offset) {
             Agent ag = new Agent(l);
-            if (isDistancing())
-                ag.setDistancing(true);
-            if (isMasked())
+            if (willDistance(SimData.getRandom()))
+                ag.willDistance(true);
+            if (isMasked(SimData.getRandom()))
                 ag.setMasked(true);
-            if (isSymptomatic())
-                ag.setSymptomatic(true);
+            if (willQuarantine(SimData.getRandom()))
+                ag.willQuarantine(true);
             return ag;
         }
         return null;
     }
 
-
-    private boolean isDistancing() {
-        return SimData.SOCIAL_DISTANCING && SimData.getRandom().nextDouble() < SimData.SOCIAL_DISTANCING_COMPLIANCE;
+    private boolean willDistance(Random rand) {
+        return SimData.getSocialDistancing() && rand.nextDouble() < SimData.getSocialDistancingCompliance();
     }
 
-    private boolean isMasked() {
-        return SimData.MASK_MANDATE && SimData.getRandom().nextDouble() < SimData.MASK_COMPLIANCE;
+    private boolean isMasked(Random rand) {
+        return SimData.getMasking() && rand.nextDouble() < SimData.getMaskCompliance();
     }
 
-    private boolean isSymptomatic() {
-        return SimData.QUARANTINING && SimData.getRandom().nextDouble() < SimData.SYMPTOMATIC;
+    private boolean willQuarantine(Random rand) {
+        return SimData.getQuarantining() && rand.nextDouble() < SimData.getSymptomaticProbability();
     }
 }

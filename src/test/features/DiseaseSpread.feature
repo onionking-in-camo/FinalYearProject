@@ -6,6 +6,13 @@ Feature: Disease spread in SIR model
     When check for contacts
     Then contacts size should be 0
 
+  Scenario: No contacts occur when the Agent has no neighbours
+    Given field is 3, 3
+    And field has no agents
+    And agent at 1, 1 is Susceptible
+    When check for contacts
+    Then contacts size should be 0
+
   Scenario: All Susceptible agents have contact when they are neighbours to an Infected agent
     Given field is 3, 3
     And field is filled with Susceptible

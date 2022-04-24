@@ -6,7 +6,7 @@ import actors.Agent;
 import actors.Entity;
 import data.SimData;
 import data.SimulationRecord;
-import disease.DiseaseSpreadCalculator;
+import disease.DiseaseSpreadController;
 import environment.*;
 import io.CSVWriter;
 import models.Infected;
@@ -78,10 +78,11 @@ public class Simulator {
             sim.stats = new FieldStats();
             sim.record = new SimulationRecord();
             sim.record.addHeader(new String[] {"Seed", "Agent Probability", "Agent 0 Probability", "Infectiousness", "Social Distancing", "Mask Mandate", "Quarantining", "Field type"});
-            sim.record.addHeader(new String[] {String.valueOf(SimData.SEED), String.valueOf(SimData.AGENT_PROB), String.valueOf(SimData.AGENT_ZERO_PROB), String.valueOf(SimData.INFECTIVITY), String.valueOf(SimData.SOCIAL_DISTANCING), String.valueOf(SimData.MASK_MANDATE), String.valueOf(SimData.QUARANTINING), field.getClass().getSimpleName()});
+            sim.record.addHeader(new String[] {String.valueOf(SimData.getSeed()), String.valueOf(SimData.getAgentProbability()), String.valueOf(SimData.getAgentZeroProbability()), String.valueOf(SimData.getInfectivity()), String.valueOf(SimData.getSocialDistancing()), String.valueOf(SimData.getMasking()), String.valueOf(SimData.getQuarantining()), field.getClass().getSimpleName()});
             sim.record.addHeader(new String[] {"Susceptible", "Infected", "Recovered"});
             sim.supp = new PropertyChangeSupport(sim);
-            sim.graph = new GraphDisplay(sim);
+            sim.graph = new GraphDisplay();
+            sim.addPropertyChangeListener(sim.graph);
             sim.reset();
             return sim;
         }
@@ -138,8 +139,8 @@ public class Simulator {
 
     public void saveData(String filePath) {
         try {
-            CSVWriter writer = new CSVWriter();
-            writer.writeCSV(record.getFullRecord(), filePath);
+//            CSVWriter writer = new CSVWriter();
+            CSVWriter.writeCSV(record.getFullRecord(), filePath);
         } catch (Exception e) {
             System.out.println("Simulator::saveData failed.");
             System.out.println(e.getMessage());
@@ -157,8 +158,8 @@ public class Simulator {
 
     private void simulateStep() {
 
-        List<Agent> contacts = DiseaseSpreadCalculator.getInfectedContacts(this.agents, this.field);
-        List<Agent> agentsToInfect = DiseaseSpreadCalculator.getNewlyInfected(contacts, this.field);
+        List<Agent> contacts = DiseaseSpreadController.getInfectedContacts(this.agents, this.field);
+        List<Agent> agentsToInfect = DiseaseSpreadController.getNewlyInfected(contacts, this.field);
 
         // have all agents act
         for (Iterator<Agent> it = agents.iterator(); it.hasNext();) {
@@ -166,16 +167,14 @@ public class Simulator {
             ag.act(field);
         }
 
-        // update infection status of newly infected agents
-        for (Agent a : agentsToInfect) {
-            a.setStatus(a.getStatus().nextState());
-        }
+
+        DiseaseSpreadController.infectAll(agentsToInfect);
 
         step++;
         display.showStatus(step, field);
 
         // slow down the simulation
-        try { Thread.sleep(SimData.RUN_DELAY);	} catch (Exception e) { /* TODO: handle exception */ }
+        try { Thread.sleep(SimData.getRunDelay());	} catch (Exception e) { /* TODO: handle exception */ }
     }
 
     private void populate() {

@@ -4,9 +4,7 @@ import java.util.*;
 
 import data.SimData;
 import environment.Field;
-import environment.Grid;
 import environment.Location;
-import environment.Direction;
 import models.SIR;
 import models.Infected;
 import models.Susceptible;
@@ -17,9 +15,9 @@ public class Agent extends Entity {
     private int health;
     private List<Action> actions;
     private Set<Percept> percepts;
-    private boolean distancing = false;
+    private boolean willDistance = false;
     private boolean masked = false;
-    private boolean symptomatic = false;
+    private boolean willQuarantine = false;
     private boolean quarantining = false;
 
     public Agent(Location location) {
@@ -35,11 +33,8 @@ public class Agent extends Entity {
         actions.add(3, new MoveDistanced());
         actions.add(4, new MoveRandom());
 
-        // randomly generate a number that reflects the duration that the agent will be sick, if infected
         health = SimData.getRandom().nextInt(
-                SimData.INFECTIOUS_PERIOD_MAX - SimData.INFECTIOUS_PERIOD_MIN) + SimData.INFECTIOUS_PERIOD_MIN;
-        // set the direction in which the agent will initially move
-//        direction = Direction.getRandomDirection();
+                SimData.getInfectiousPeriodMax() - SimData.getInfectiousPeriodMin()) + SimData.getInfectiousPeriodMin();
     }
 
     /**
@@ -50,6 +45,7 @@ public class Agent extends Entity {
      * @param f the field of play
      */
     public void act(Field<Entity, Location> f) {
+        System.out.println("ACT");
         see(f);
         processDisease();
         for (Action action : actions) {
@@ -70,8 +66,8 @@ public class Agent extends Entity {
         this.status = status;
     }
 
-    public void setDistancing(boolean b) {
-        distancing = b;
+    public void willDistance(boolean b) {
+        willDistance = b;
     }
 
     public boolean getMasked() {
@@ -82,20 +78,22 @@ public class Agent extends Entity {
         masked = b;
     }
 
-    public void setSymptomatic(boolean b)  {
-        symptomatic = b;
+    public void willQuarantine(boolean b)  {
+        willQuarantine = b;
     }
 
     /** Beginning of actions
      * Defines the actions that an Agent is capable of
      * making.
-     *
      */
     interface Action {
         boolean act(Field<Entity, Location> f);
         default List<Location> orderBestLocations(Field<Entity, Location> f, Location origin) {
             List<Location> freeLocs = f.getAllFreeAdjacentLocations(origin);
             Collections.sort(freeLocs, Comparator.comparingInt(elem -> f.getAllNeighbours(elem, Agent.class).size()));
+            for (Location l : freeLocs) {
+                System.out.println(f.getAllNeighbours(l, Agent.class).size());
+            }
             return freeLocs;
         };
         default Location findNonQuarantineLocation(Field<Entity, Location> f, List<Location> moves) {
@@ -112,6 +110,7 @@ public class Agent extends Entity {
     private class MoveRandom implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
+            System.out.println("Move|Random");
             Location to = f.freeAdjacentLocation(getLocation());
             if (to != null) {
                 move(f, to);
@@ -124,7 +123,7 @@ public class Agent extends Entity {
     private class Quarantine implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            if (symptomatic && getStatus().getClass() == Infected.class) {
+            if (willQuarantine && getStatus().getClass() == Infected.class) {
                 if (!quarantining) {
                     quarantining = true;
                     f.registerZone(new HashSet<>(f.getAllAdjacentLocations(getLocation())));
@@ -144,7 +143,7 @@ public class Agent extends Entity {
     private class MoveDQ implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            if (SimData.QUARANTINING && distancing) {
+            if (SimData.getQuarantining() && willDistance) {
                 List<Location> freeLocs = orderBestLocations(f, getLocation());
                 if (!freeLocs.isEmpty()) {
                     Location choice = findNonQuarantineLocation(f, freeLocs);
@@ -164,7 +163,7 @@ public class Agent extends Entity {
     private class MoveQuarantined implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            if (SimData.QUARANTINING) {
+            if (SimData.getQuarantining()) {
                 List<Location> freeLocs = f.getAllFreeAdjacentLocations(getLocation());
                 if (!freeLocs.isEmpty()) {
                     Collections.shuffle(freeLocs);
@@ -185,9 +184,10 @@ public class Agent extends Entity {
     private class MoveDistanced implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            if (distancing) {
+            if (willDistance) {
                 List<Location> freeLocs = orderBestLocations(f, getLocation());
                 if (!freeLocs.isEmpty()) {
+                    System.out.println("Move|Distanced");
                     move(f, freeLocs.get(0));
                 }
                 return true;

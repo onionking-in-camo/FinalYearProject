@@ -7,10 +7,7 @@ import javax.swing.border.*;
 
 import data.GUIData;
 import data.SimData;
-import environment.FieldType;
-import environment.Grid;
-import environment.MobileNetwork;
-import environment.StaticNetwork;
+import environment.*;
 import exceptions.IllegalParameterException;
 import models.Infected;
 import models.Recovered;
@@ -43,20 +40,20 @@ public class Main {
     private JButton resetButton;
     private JButton quitButton;
     // simulation params
-    private String defaultSimLength = String.valueOf(SimData.RUNTIME);
-    private String defaultSimSeed = String.valueOf(SimData.SEED);
-    private String defaultSimSize = String.valueOf(SimData.WIDTH);
+    private String defaultSimLength = String.valueOf(SimData.getRuntime());
+    private String defaultSimSeed = String.valueOf(SimData.getSeed());
+    private String defaultSimSize = String.valueOf(SimData.getWidth());
     // disease params
-    private String defaultInfectiousness = String.valueOf(SimData.INFECTIVITY);
-    private String defaultSymptomaticProb = String.valueOf(SimData.SYMPTOMATIC);
-    private String defaultMaskReduction = String.valueOf(SimData.MASK_WEARING_REDUCTION);
+    private String defaultInfectiousness = String.valueOf(SimData.getInfectivity());
+    private String defaultSymptomaticProb = String.valueOf(SimData.getSymptomaticProbability());
+    private String defaultMaskReduction = String.valueOf(SimData.getMaskRiskReduction());
     // compliance params
-    private String defQuarantineCompliance = String.valueOf(SimData.SELF_QUARANTINE_COMPLIANCE);
-    private String defSocialDistancingCompliance = String.valueOf(SimData.SOCIAL_DISTANCING_COMPLIANCE);
-    private String defMaskWearingCompliance = String.valueOf(SimData.MASK_COMPLIANCE);
+    private String defQuarantineCompliance = String.valueOf(SimData.getQuarantineCompliance());
+    private String defSocialDistancingCompliance = String.valueOf(SimData.getSocialDistancingCompliance());
+    private String defMaskWearingCompliance = String.valueOf(SimData.getMaskCompliance());
     // agent params
-    private String agentProb = String.valueOf(SimData.AGENT_PROB);
-    private String agentZeroProb = String.valueOf(SimData.AGENT_ZERO_PROB);
+    private String agentProb = String.valueOf(SimData.getAgentProbability());
+    private String agentZeroProb = String.valueOf(SimData.getAgentZeroProbability());
     //
     private String defaultOutputPath = String.valueOf(SimData.DATA_FILE_PATH);
 
@@ -360,9 +357,9 @@ public class Main {
         try {
             setParams();
             simulator = new Simulator.SimulationBuilder()
-                    .setDepth(SimData.DEPTH)
-                    .setWidth(SimData.WIDTH)
-                    .setField(SimData.FIELD_TYPE)
+                    .setDepth(SimData.getDepth())
+                    .setWidth(SimData.getWidth())
+                    .setField(SimData.getFieldType())
                     .setClassColour(Susceptible.class, GUIData.SUS_COL)
                     .setClassColour(Infected.class, GUIData.INF_COL)
                     .setClassColour(Recovered.class, GUIData.REC_COL)
@@ -415,29 +412,26 @@ public class Main {
     }
 
     private void setParams() throws IllegalParameterException {
-        SimData.RUNTIME = Integer.parseInt(simLength.getValue());
-        SimData.SEED = Integer.parseInt(simSeed.getValue());
-        SimData.WIDTH = Integer.parseInt(mapWidth.getValue());
-        SimData.DEPTH = Integer.parseInt(mapDepth.getValue());
-        SimData.AGENT_PROB = Double.parseDouble(agentCreationProb.getValue());
-        SimData.AGENT_ZERO_PROB = Double.parseDouble(agentZeroCreationProb.getValue());
-        SimData.SOCIAL_DISTANCING = socialDistancing.getValue();
-        SimData.MASK_MANDATE = maskMandate.getValue();
-        SimData.QUARANTINING = quarantining.getValue();
+        SimData.setRuntime(Integer.parseInt(simLength.getValue()));
+        SimData.setSeed(Integer.parseInt(simSeed.getValue()));
+        SimData.setWidth(Integer.parseInt(mapWidth.getValue()));
+        SimData.setDepth(Integer.parseInt(mapDepth.getValue()));
+        SimData.setAgentProbability(Double.parseDouble(agentCreationProb.getValue()));
+        SimData.setAgentZeroProbability(Double.parseDouble(agentZeroCreationProb.getValue()));
+        SimData.setSocialDistancing(socialDistancing.getValue());
+        SimData.setMasking(maskMandate.getValue());
+        SimData.setQuarantining(quarantining.getValue());
         SimData.DATA_FILE_PATH = String.valueOf(saveFilePath.getValue());
         String fieldType = fieldGroup.getSelection().getActionCommand();
         Class fieldClass;
         if (fieldType.equals("Grid")) {
             fieldClass = Grid.class;
-            SimData.FIELD_TYPE = FieldType.GRID;
-        }
-        else if (fieldType.equals("Static")) {
-            fieldClass = StaticNetwork.class;
+            SimData.setFieldType(FieldType.GRID);
         }
         else {
             fieldClass = MobileNetwork.class;
-            SimData.FIELD_TYPE = FieldType.NETWORK;
+            SimData.setFieldType(FieldType.NETWORK);
         }
-        SimData.FIELD_CLASS = fieldClass;
+        SimData.setFieldClass(fieldClass);
     }
 }

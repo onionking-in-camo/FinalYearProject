@@ -195,8 +195,11 @@ public class Grid implements Field<Entity, Location> {
     public <T extends Entity> boolean isNeighbourTo(Location location, Class<T> c) {
         Iterator<Location> it = adjacentLocations(location, 1);
         while(it.hasNext()) {
-            Entity e = getObjectAt(it.next());
-            if(e != null && e.getClass() == c)
+            Location loc = it.next();
+            if (loc.equals(location)) continue;
+            Entity e = getObjectAt(loc);
+//            Entity e = getObjectAt(it.next());
+            if (e != null && e.getClass() == c)
                 return true;
         }
         return false;
@@ -222,6 +225,7 @@ public class Grid implements Field<Entity, Location> {
         Iterator<Location> it = adjacentLocations(location, 1);
         while (it.hasNext()) {
             Location adjLoc = it.next();
+            if (adjLoc.equals(location)) { continue; }
             Entity e = getObjectAt(adjLoc);
             if (e != null && e.getClass() == c) {
                 neighbours.add((T) e);
@@ -315,6 +319,7 @@ public class Grid implements Field<Entity, Location> {
                     }
                     else sb.append(" X ");
                 }
+                else { sb.append(" O "); }
             }
             sb.append("]");
             sb.append("\n");

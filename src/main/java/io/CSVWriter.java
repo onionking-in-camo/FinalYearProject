@@ -8,16 +8,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// cite Baeldung
+/** methods taken from https://www.baeldung.com/java-csv
+ */
 public class CSVWriter {
 
-    private String convertToCSV(String[] data) {
+    private static String convertToCSV(String[] data) {
         return Stream.of(data)
-                .map(this::escapeSpecialCharacters)
+                .map(CSVWriter::escapeSpecialCharacters)
                 .collect(Collectors.joining(","));
     }
 
-    private String escapeSpecialCharacters(String data) {
+    private static String escapeSpecialCharacters(String data) {
         String escapedData = data.replaceAll("\\R", " ");
         if (data.contains(",") || data.contains("\"") || data.contains("'")) {
             data = data.replace("\"", "\"\"");
@@ -34,16 +35,16 @@ public class CSVWriter {
      * @param filePath the identifier of the file
      * @throws IOException
      */
-    public void writeCSV(List<String[]> dataLines, String filePath) throws IOException {
+    public static void writeCSV(List<String[]> dataLines, String filePath) throws IOException {
         File csvOutputFile = new File(filePath + ".csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             dataLines.stream()
-                    .map(this::convertToCSV)
+                    .map(CSVWriter::convertToCSV)
                     .forEach(pw::println);
         }
     }
 
-    public void writeCSVFromList(List<List<String>> dataLines, String filePath) throws IOException {
+    public static void writeCSVFromList(List<List<String>> dataLines, String filePath) throws IOException {
         List<String[]> l = new ArrayList<>();
         for (List<String> line : dataLines) {
             l.add(line.toArray(new String[0]));

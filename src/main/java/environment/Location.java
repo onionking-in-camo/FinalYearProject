@@ -58,44 +58,4 @@ public class Location {
     public boolean occupied() {
         return occupant != null;
     }
-
-    public static Location getLocationInDirection(Location l, Direction d) {
-        int x = l.col;
-        int y = l.row;
-        switch (d) {
-            case NORTH:
-                y -= 1;
-                break;
-            case NORTH_EAST:
-                x += 1;
-                y -= 1;
-                break;
-            case EAST:
-                x += 1;
-                break;
-            case SOUTH_EAST:
-                x += 1;
-                y += 1;
-                break;
-            case SOUTH:
-                y += 1;
-                break;
-            case SOUTH_WEST:
-                x -= 1;
-                y += 1;
-                break;
-            case WEST:
-                x -= 1;
-                break;
-            case NORTH_WEST:
-                x -= 1;
-                y -= 1;
-                break;
-        }
-        if (x < 0) { x = x + SimData.WIDTH; }
-        if (y < 0) { y = y + SimData.DEPTH; }
-        if (x >= SimData.WIDTH) { x = x - SimData.WIDTH; }
-        if (y >= SimData.DEPTH) { y = y - SimData.DEPTH; }
-        return new Location(y, x);
-    }
 }

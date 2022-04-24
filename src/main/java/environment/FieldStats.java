@@ -34,7 +34,7 @@ public class FieldStats {
 
     public String[] getClassCount(Field field, List<Class<?>> classes) {
         String[] results = new String[classes.size()];
-        generateCounts2(field);
+        generateCounts(field);
         for (int i = 0; i < classes.size(); i++) {
             if (counters.containsKey(classes.get(i))) {
                 results[i] = String.valueOf(counters.get(classes.get(i)).getCount());
@@ -111,7 +111,7 @@ public class FieldStats {
         return c.getCount() > 0;
     }
 
-    private void generateCounts2(Field field) {
+    private void generateCounts(Field field) {
         reset();
         List<Entity> entities = field.getAllEntities();
         for (Entity e : entities) {
@@ -120,10 +120,10 @@ public class FieldStats {
         valid = true;
     }
 
-    public String getPopulationDetails2(Field field) {
+    public String getPopulationDetails(Field field) {
         StringBuffer buffer = new StringBuffer();
         if (!valid) {
-            generateCounts2(field);
+            generateCounts(field);
         }
         Iterator<Class<?>> keys = counters.keySet().iterator();
         while (keys.hasNext()) {

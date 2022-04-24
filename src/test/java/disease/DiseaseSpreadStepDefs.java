@@ -1,6 +1,7 @@
+package disease;
+
 import actors.Agent;
 import data.SimData;
-import disease.DiseaseSpreadCalculator;
 import environment.Grid;
 import environment.Location;
 import io.cucumber.java.en.And;
@@ -19,6 +20,7 @@ public class DiseaseSpreadStepDefs {
     Grid g;
     List<Agent> contacts = new ArrayList<>();
     List<Agent> infected = new ArrayList<>();
+    double risk;
 
     @Given("field is {int}, {int}")
     public void field_is(Integer width, Integer depth) {
@@ -39,7 +41,7 @@ public class DiseaseSpreadStepDefs {
 
     @When("check for contacts")
     public void check_for_contacts_with_infected() {
-        contacts = DiseaseSpreadCalculator.getInfectedContacts(g.getAllOf(Agent.class), g);
+        contacts = DiseaseSpreadController.getInfectedContacts(g.getAllOf(Agent.class), g);
     }
 
     @Then("contacts size should be {int}")
@@ -54,14 +56,13 @@ public class DiseaseSpreadStepDefs {
 
     @When("check for newly infected")
     public void check_for_newly_infected() {
-        contacts = DiseaseSpreadCalculator.getInfectedContacts(g.getAllOf(Agent.class), g);
-        infected = DiseaseSpreadCalculator.getNewlyInfected(contacts, g);
-        System.out.println(g.toString());
+        contacts = DiseaseSpreadController.getInfectedContacts(g.getAllOf(Agent.class), g);
+        infected = DiseaseSpreadController.getNewlyInfected(contacts, g);
     }
 
     @Given("chance of infection is {double}")
     public void chance_of_infection_is(Double infRate) {
-        SimData.INFECTIVITY = infRate;
+        SimData.setInfectivity(infRate);
     }
 
     @Then("newly infected should equal {int}")
@@ -85,5 +86,10 @@ public class DiseaseSpreadStepDefs {
         Agent ag = new Agent(new Location(row, col));
         ag.setStatus(new Infected());
         g.place(new Location(row, col), ag);
+    }
+
+    @And("field has no agents")
+    public void fieldHasNoAgents() {
+        g.clearAll();
     }
 }

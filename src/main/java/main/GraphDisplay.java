@@ -27,8 +27,7 @@ public class GraphDisplay extends JFrame implements PropertyChangeListener {
             .yAxisTitle("Number of person(s)")
             .build();
 
-    public GraphDisplay(Simulator sim) {
-        sim.addPropertyChangeListener(this);
+    public GraphDisplay() {
         initData = new int[][] { {0}, {0} };
 
         XYSeries sus = graph.addSeries("Susceptible", initData[0], initData[1]);

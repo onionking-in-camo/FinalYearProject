@@ -109,7 +109,7 @@ public class SimulatorDisplay extends JFrame {
         if (!isVisible()) { setVisible(true); }
         this.step.setText(STEP_PREFIX + step);
         stats.reset();
-        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails2(field));
+        population.setText(TOTAL_AG_PREFIX + stats.getPopulationDetails(field));
         stats.countFinished();
         fieldDisplay.prepare();
         fieldDisplay.update();
@@ -184,7 +184,6 @@ public class SimulatorDisplay extends JFrame {
      */
     private class GridDisplay extends FieldDisplay {
 
-//        private int gridWidth, gridHeight;
         private int xScale, yScale;
         private Graphics g;
         private Image fieldImage;
@@ -192,9 +191,6 @@ public class SimulatorDisplay extends JFrame {
 
         public GridDisplay(Field f) {
             super(f.getDimensions(), f.getDimensions());
-//            gridHeight = height;
-//            gridWidth = width;
-//            this.height =
             grid = (Grid) f;
         }
 

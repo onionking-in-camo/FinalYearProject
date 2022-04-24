@@ -203,7 +203,7 @@ public class MobileNetwork implements Field<Entity, Location> {
     }
 
     public void createSmallWorld() {
-        int lattice = SimData.WIDTH;
+        int lattice = SimData.getWidth();
         double clustering = 0.5;
         KleinbergSmallWorldGenerator<Location, Edge> gen = new KleinbergSmallWorldGenerator<>(
                 new GraphFactory(), nodeSupplier, edgeSupplier, lattice, clustering
@@ -213,9 +213,9 @@ public class MobileNetwork implements Field<Entity, Location> {
 
     public void createFreeScaleWorld(int numEdges) {
         BarabasiAlbertGenerator<Location, Edge> gen = new BarabasiAlbertGenerator<>(
-                new GraphFactory(), nodeSupplier, edgeSupplier, 3, numEdges, SimData.SEED, new HashSet<>()
+                new GraphFactory(), nodeSupplier, edgeSupplier, 3, numEdges, SimData.getSeed(), new HashSet<>()
         );
-        gen.evolveGraph(SimData.WIDTH + SimData.DEPTH);
+        gen.evolveGraph(SimData.getWidth() + SimData.getDepth());
         gg = (ModifiableSparseGraph<Location, Edge>) gen.get();
     }
 

@@ -4,13 +4,14 @@ import actors.Agent;
 import data.SimData;
 import environment.Field;
 import models.Infected;
+import models.SIR;
 import models.Susceptible;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class DiseaseSpreadCalculator {
+public class DiseaseSpreadController {
 
     public static List<Agent> getInfectedContacts(List<Agent> allAgents, Field field) {
         List<Agent> contacts = new ArrayList<>();
@@ -29,34 +30,44 @@ public class DiseaseSpreadCalculator {
             List<Agent> neighbours = field.getAllNeighbours(ag.getLocation(), Agent.class);
             List<Agent> infectedNeighbours = neighbours
                     .stream()
-                    .filter(DiseaseSpreadCalculator::isInfected)
+                    .filter(DiseaseSpreadController::isInfected)
                     .toList();
-
-            double uninfectedProb = 1.0; // the chance that the agent will remain uninfected
-
-            // for every infected neighbour, we calculate the decrease in probability
-            // that the susceptible agent will remain uninfected
-            for (Agent infectedAg : infectedNeighbours) {
-                double infRate = SimData.INFECTIVITY;
-                if (infectedAg.getMasked()) { infRate *= SimData.MASK_WEARING_REDUCTION; }
-                uninfectedProb *= (1.0 - infRate);
-            }
-
-            // the chance the susceptible agent becomes infected is the
-            // inverse of the chance that the agent remains uninfected
-            double infectedProb = 1.0 - uninfectedProb;
-            if (SimData.getRandom().nextDouble() <= infectedProb)
+            double pInfected = calculateProbabilityOfInfection(infectedNeighbours);
+            if (SimData.getRandom().nextDouble() <= pInfected)
                 newlyInfected.add(ag);
         }
         return newlyInfected;
 
     }
 
-    private static boolean isInfected(Agent ag) {
+    public static double calculateProbabilityOfInfection(List<Agent> neighbours) {
+        double pUninfected = 1.0;
+        for (Agent infected : neighbours) {
+            double rateOfInfection = SimData.getInfectivity();
+            if (infected.getMasked()) {
+                rateOfInfection *= SimData.getMaskRiskReduction();
+            }
+            pUninfected *= (1.0 - rateOfInfection);
+        }
+        return 1.0 - pUninfected;
+    }
+
+    public static void infectAll(List<Agent> toInfect) {
+//        List<Agent> infected = new ArrayList<>();
+        for (Agent ag : toInfect) {
+            if (ag.getStatus().getClass() == Susceptible.class) {
+                ag.setStatus(ag.getStatus().nextState());
+            }
+//            infected.add(ag);
+        }
+//        return infected;
+    }
+
+    public static boolean isInfected(Agent ag) {
         return ag.getStatus().getClass() == Infected.class;
     }
 
-    private static boolean nearInfected(Field f, Agent ag) {
+    public static boolean nearInfected(Field f, Agent ag) {
         List<Agent> neighbours = f.getAllNeighbours(ag.getLocation(), Agent.class);
         for (Iterator<Agent> it = neighbours.iterator(); it.hasNext();) {
             if (isInfected(it.next())) {
