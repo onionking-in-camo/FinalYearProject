@@ -36,7 +36,6 @@ public class Main {
     private JButton setUpButton;
     private JButton stepOnceButton;
     private JButton runLongButton;
-    private JButton runIterationsButton;
     private JButton resetButton;
     private JButton quitButton;
     // simulation params
@@ -70,7 +69,6 @@ public class Main {
         setUpButton = new JButton();
         stepOnceButton = new JButton();
         runLongButton = new JButton();
-        runIterationsButton = new JButton();
         resetButton = new JButton();
         quitButton = new JButton();
 
@@ -111,13 +109,13 @@ public class Main {
 
         JRadioButton staticBox = new JRadioButton();
         staticBox.setEnabled(true);
-        staticBox.setActionCommand("Static");
-        staticBox.setText("Static Network");
+        staticBox.setActionCommand("Smallworld");
+        staticBox.setText("Smallworld Network");
 
         JRadioButton mobileBox = new JRadioButton();
         mobileBox.setEnabled(true);
-        mobileBox.setActionCommand("Mobile");
-        mobileBox.setText("Mobile Network");
+        mobileBox.setActionCommand("Freescale");
+        mobileBox.setText("Freescale Network");
 
         fieldGroup = new ButtonGroup();
         fieldGroup.add(gridBox);
@@ -133,9 +131,6 @@ public class Main {
         runLongButton.setText("Run");
         runLongButton.setToolTipText("Run simulation for the duration specified.");
         runLongButton.setEnabled(false);
-        runIterationsButton.setText("Run for Duration");
-        runIterationsButton.setToolTipText("Run a number of iterations of simulation.");
-        runIterationsButton.setEnabled(false);
         resetButton.setText("Reset");
         resetButton.setToolTipText("Allow changing of the parameters.");
         resetButton.setEnabled(false);
@@ -267,7 +262,6 @@ public class Main {
         commandBox.add(resetButton);
         commandBox.add(stepOnceButton);
         commandBox.add(runLongButton);
-        commandBox.add(runIterationsButton);
         commandBox.add(quitButton);
 
         lowerBox.add(filePathBox, BorderLayout.NORTH);
@@ -310,20 +304,6 @@ public class Main {
             new Thread(() -> {
                 run();
                 save();
-                mainFrame.setVisible(true);
-            }).start();
-            mainFrame.setVisible(false);
-        });
-
-        runIterationsButton.addActionListener((e) -> {
-            new Thread(() -> {
-                int[] seeds = new int[] {3, 9, 81, 90, 171};
-                for (int i = 0; i < 5; i++) {
-                    simSeed.setValue(String.valueOf(seeds[i]));
-                    setUp();
-                    run();
-                    save();
-                }
                 mainFrame.setVisible(true);
             }).start();
             mainFrame.setVisible(false);
@@ -379,7 +359,6 @@ public class Main {
         setUpButton.setEnabled(false);
         stepOnceButton.setEnabled(true);
         runLongButton.setEnabled(true);
-        runIterationsButton.setEnabled(true);
         resetButton.setEnabled(true);
     }
 
@@ -418,11 +397,18 @@ public class Main {
         SimData.setDepth(Integer.parseInt(mapDepth.getValue()));
         SimData.setAgentProbability(Double.parseDouble(agentCreationProb.getValue()));
         SimData.setAgentZeroProbability(Double.parseDouble(agentZeroCreationProb.getValue()));
+        SimData.setInfectivity(Double.parseDouble(infectiousness.getValue()));
         SimData.setSocialDistancing(socialDistancing.getValue());
+        SimData.setSocialDistancingCompliance(Double.parseDouble(this.socialDistancingCompliance.getValue()));
         SimData.setMasking(maskMandate.getValue());
+        SimData.setMaskCompliance(Double.parseDouble(this.maskWearingCompliance.getValue()));
+        SimData.setMaskRiskReduction(Double.parseDouble(this.maskWearingReduction.getValue()));
         SimData.setQuarantining(quarantining.getValue());
+        SimData.setQuarantiningCompliance(Double.parseDouble(this.quarantineCompliance.getValue()));
+        SimData.setSymptomaticProbability(Double.parseDouble(this.symptomaticProb.getValue()));
         SimData.DATA_FILE_PATH = String.valueOf(saveFilePath.getValue());
         String fieldType = fieldGroup.getSelection().getActionCommand();
+//        String networkType =
         Class fieldClass;
         if (fieldType.equals("Grid")) {
             fieldClass = Grid.class;
@@ -431,6 +417,10 @@ public class Main {
         else {
             fieldClass = MobileNetwork.class;
             SimData.setFieldType(FieldType.NETWORK);
+            if (fieldType.equals("Smallworld"))
+                SimData.setNetworkType(NetworkType.SMALLWORLD);
+            else if (fieldType.equals("Freescale"))
+                SimData.setNetworkType(NetworkType.FREESCALE);
         }
         SimData.setFieldClass(fieldClass);
     }

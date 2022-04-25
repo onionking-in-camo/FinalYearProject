@@ -76,7 +76,10 @@ public class MobileNetwork implements Field<Entity, Location> {
         setNodeSupplier(new NodeFactory());
         setEdgeSupplier(new EdgeFactory());
         setPaint(new NodePainter());
-        if (gg == null) {
+        if (SimData.getNetworkType() == NetworkType.FREESCALE) {
+            createFreeScaleWorld(3);
+        }
+        else {
             createSmallWorld();
         }
     }
@@ -215,7 +218,7 @@ public class MobileNetwork implements Field<Entity, Location> {
         BarabasiAlbertGenerator<Location, Edge> gen = new BarabasiAlbertGenerator<>(
                 new GraphFactory(), nodeSupplier, edgeSupplier, 3, numEdges, SimData.getSeed(), new HashSet<>()
         );
-        gen.evolveGraph(SimData.getWidth() + SimData.getDepth());
+        gen.evolveGraph(SimData.getWidth() * 10);
         gg = (ModifiableSparseGraph<Location, Edge>) gen.get();
     }
 

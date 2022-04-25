@@ -10,7 +10,7 @@ public class GUIData {
     public final static int SETUP_X = 10;
     public final static int SETUP_Y = Y_OFFSET;
     // x,y of the Simulation window
-    public final static int SIM_X = 350;
+    public final static int SIM_X = 380;
     public final static int SIM_Y = Y_OFFSET;
     // x,y of the Graph window
     public final static int GRAPH_X = 955;

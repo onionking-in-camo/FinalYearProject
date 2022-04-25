@@ -1,9 +1,6 @@
 package data;
 
-import environment.Field;
-import environment.FieldType;
-import environment.Grid;
-import environment.MobileNetwork;
+import environment.*;
 import obsolete.Network;
 
 import java.util.Random;
@@ -150,7 +147,7 @@ public class SimData {
         return MASK_WEARING_REDUCTION;
     }
     public static void setMaskRiskReduction(double reduction) {
-        if (reduction < 0 || reduction > 1)
+        if (reduction < 0.0 || reduction > 1.0)
             throw new IllegalArgumentException("Mask reduction must be between 0 and 1 inclusive.");
         MASK_WEARING_REDUCTION = reduction;
     }
@@ -161,7 +158,7 @@ public class SimData {
     }
     public static void setSymptomaticProbability(double prob) {
         if (prob < 0 || prob > 1)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(" Symptomatic probability must be between 0 and 1 inclusive.");
         SYMPTOMATIC = prob;
     }
 
@@ -171,7 +168,7 @@ public class SimData {
     }
     public static void setInfectivity(double inf) {
         if (inf < 0 || inf > 1.0)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(" Infectiousness must be between 0 and 1 inclusive.");
         INFECTIVITY = inf;
     }
 
@@ -218,6 +215,12 @@ public class SimData {
         FIELD_TYPE = fieldType;
     }
 
+    private static NetworkType NETWORK_TYPE = NetworkType.FREESCALE;
+    public static NetworkType getNetworkType() { return NETWORK_TYPE; }
+    public static void setNetworkType(NetworkType networkType) { NETWORK_TYPE = networkType; }
+
     public static String DATA_FILE_DIR = "./src/main/resources/";
     public static String DATA_FILE_PATH = "simulation_record_default";
+
+
 }

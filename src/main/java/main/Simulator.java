@@ -139,7 +139,6 @@ public class Simulator {
 
     public void saveData(String filePath) {
         try {
-//            CSVWriter writer = new CSVWriter();
             CSVWriter.writeCSV(record.getFullRecord(), filePath);
         } catch (Exception e) {
             System.out.println("Simulator::saveData failed.");
@@ -166,7 +165,6 @@ public class Simulator {
             Agent ag = it.next();
             ag.act(field);
         }
-
 
         DiseaseSpreadController.infectAll(agentsToInfect);
 

@@ -45,7 +45,6 @@ public class Agent extends Entity {
      * @param f the field of play
      */
     public void act(Field<Entity, Location> f) {
-        System.out.println("ACT");
         see(f);
         processDisease();
         for (Action action : actions) {
@@ -91,9 +90,6 @@ public class Agent extends Entity {
         default List<Location> orderBestLocations(Field<Entity, Location> f, Location origin) {
             List<Location> freeLocs = f.getAllFreeAdjacentLocations(origin);
             Collections.sort(freeLocs, Comparator.comparingInt(elem -> f.getAllNeighbours(elem, Agent.class).size()));
-            for (Location l : freeLocs) {
-                System.out.println(f.getAllNeighbours(l, Agent.class).size());
-            }
             return freeLocs;
         };
         default Location findNonQuarantineLocation(Field<Entity, Location> f, List<Location> moves) {
@@ -110,7 +106,6 @@ public class Agent extends Entity {
     private class MoveRandom implements Action {
         @Override
         public boolean act(Field<Entity, Location> f) {
-            System.out.println("Move|Random");
             Location to = f.freeAdjacentLocation(getLocation());
             if (to != null) {
                 move(f, to);
@@ -187,7 +182,6 @@ public class Agent extends Entity {
             if (willDistance) {
                 List<Location> freeLocs = orderBestLocations(f, getLocation());
                 if (!freeLocs.isEmpty()) {
-                    System.out.println("Move|Distanced");
                     move(f, freeLocs.get(0));
                 }
                 return true;
