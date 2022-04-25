@@ -18,6 +18,8 @@ import models.Infected;
  * @version 2002-04-23
  * @version Ian T. Nabney
  * @version 01-02-2005
+ * @author James J Kerr
+ * @version 01-01-2022
  */
 public class FieldStats {
     

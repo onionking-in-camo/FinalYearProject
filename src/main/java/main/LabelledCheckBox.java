@@ -5,6 +5,13 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 import javax.swing.border.*;
 
+
+/**
+ * @author Maria Chli
+ * @version 08-11-2009
+ * @author James J Kerr
+ * @version 01-01-2022
+ */
 public class LabelledCheckBox extends JComponent {
 
     private static final long serialVersionUID = 1L;

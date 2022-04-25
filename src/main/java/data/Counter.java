@@ -10,6 +10,8 @@ package data;
  * @version 2002-04-23
  * @author Ian T. Nabney
  * @version 01-02-2005
+ * @author James J Kerr
+ * @version 01-01-2022
  */
 public class Counter {
     // A name for this type of simulation participant

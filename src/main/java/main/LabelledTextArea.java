@@ -12,6 +12,12 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+/**
+ * @author Maria Chli
+ * @version 08-11-2009
+ * @author James J Kerr
+ * @version 01-01-2022
+ */
 public class LabelledTextArea extends JComponent {
 
     @Serial
